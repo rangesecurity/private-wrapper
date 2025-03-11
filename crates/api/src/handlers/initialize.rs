@@ -19,7 +19,7 @@ use {
     std::sync::Arc,
 };
 
-/// Handler which is used to construct the token account initialization transaction
+/// Handler which is used to construct the deposit + aply balance instructions
 ///
 /// # Errors
 ///
@@ -98,7 +98,7 @@ pub async fn initialize(
     // check to see if the ata already exists
     if let Some(token_account) = std::mem::take(&mut accounts[1]) {
         // token account already exists, check to see if its already configured for confidential transfers
-        if token_account_already_configured(token_account) {
+        if token_account_already_configured(&token_account) {
             return (
                 StatusCode::BAD_REQUEST,
                 Json(ApiError {

@@ -36,7 +36,7 @@ pub fn is_valid_mint(mint: Account) -> bool {
 /// Validates that:
 /// * The account is an spl_token_2022 token account
 /// * Supports the ConfidentialTransferAccount extension
-pub fn token_account_already_configured(account: Account) -> bool {
+pub fn token_account_already_configured(account: &Account) -> bool {
     let Ok(state) = StateWithExtensions::<TokenAccount>::unpack(&account.data) else {
         return false;
     };
@@ -127,7 +127,7 @@ mod test {
 
     #[test]
     fn test_token_account_already_configured_not_a_token() {
-        assert!(!token_account_already_configured(Account {
+        assert!(!token_account_already_configured(&Account {
             data: vec![1, 2, 3],
             ..Default::default()
         }));
@@ -146,7 +146,7 @@ mod test {
             &mut account_data,
         )
         .unwrap();
-        assert!(!token_account_already_configured(Account {
+        assert!(!token_account_already_configured(&Account {
             data: account_data,
             ..Default::default()
         }));
@@ -193,7 +193,7 @@ mod test {
         state.pack_base();
         state.init_account_type().unwrap();
 
-        assert!(token_account_already_configured(Account {
+        assert!(token_account_already_configured(&Account {
             data: account_data,
             ..Default::default()
         }))

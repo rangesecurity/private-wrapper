@@ -47,3 +47,5 @@ version = "0.5"
 version = "0.14"
 [dev-dependencies.http-body-util]
 version = "0.1"
+[dev-dependencies.axum-test]
+version = "17"

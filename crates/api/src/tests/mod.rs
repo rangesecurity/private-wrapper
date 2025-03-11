@@ -1,11 +1,15 @@
 use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::{
-    signature::Keypair, signer::Signer, system_instruction, transaction::Transaction,
+    pubkey::Pubkey, signature::Keypair, signer::Signer, system_instruction,
+    transaction::Transaction,
 };
 use spl_token_2022::{extension::ExtensionType, state::Mint};
 use spl_token_client::token::ExtensionInitializationParams;
 
 pub mod test_initialize;
+
+/// 100.0 with 9 decimals
+pub const MINT_AMOUNT: u64 = 100000000000;
 
 /// Creates a token mint with the ConfidentialTransferMint extension
 pub async fn create_confidential_mint(rpc: &RpcClient, mint: &Keypair, authority: &Keypair) {
@@ -55,4 +59,12 @@ pub async fn create_confidential_mint(rpc: &RpcClient, mint: &Keypair, authority
     );
 
     rpc.send_and_confirm_transaction(&tx).await.unwrap();
+}
+
+pub fn get_user_ata(key: &Keypair, mint: &Keypair) -> Pubkey {
+    spl_associated_token_account::get_associated_token_address_with_program_id(
+        &key.pubkey(),
+        &mint.pubkey(),
+        &spl_token_2022::id(),
+    )
 }
