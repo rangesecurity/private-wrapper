@@ -67,3 +67,34 @@ mod signature_string {
         Signature::from_str(&s).map_err(serde::de::Error::custom)
     }
 }
+
+
+#[cfg(test)]
+mod test {
+    use common::{key_generator::KeypairType, test_helpers::test_key};
+    use solana_sdk::signer::Signer;
+    use super::*;
+
+    #[test]
+    fn test_initialize_serialization() {
+        let key = test_key();
+        let expected_elgamal_signature = key.sign_message(&KeypairType::ElGamal.message_to_sign(key.pubkey()));
+        let expected_ae_signature = key.sign_message(&KeypairType::Ae.message_to_sign(key.pubkey()));
+
+        let init_msg: Initialize = serde_json::from_value(serde_json::json!({
+            "authority": key.pubkey().to_string(),
+            "elgamal_signature": expected_elgamal_signature.to_string(),
+            "ae_signature": expected_ae_signature.to_string()
+        })).unwrap();
+
+        assert_eq!(
+            init_msg.authority, key.pubkey(),
+        );
+        assert_eq!(
+            init_msg.elgamal_signature, expected_elgamal_signature
+        );
+        assert_eq!(
+            init_msg.ae_signature, expected_ae_signature
+        );
+    }
+}

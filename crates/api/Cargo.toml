@@ -31,3 +31,7 @@ workspace = true
 workspace = true
 [dependencies.common]
 path = "../common"
+
+[dev-dependencies.common]
+path = "../common"
+features = ["test-helpers"]

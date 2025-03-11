@@ -3,6 +3,10 @@ name = "common"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+default = []
+test-helpers = []
+
 [dependencies.solana-zk-sdk]
 workspace = true
 [dependencies.solana-sdk]

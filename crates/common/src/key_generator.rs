@@ -46,10 +46,10 @@ pub fn derive_ae_key(signature: Signature) -> Result<AeKey> {
 #[cfg(test)]
 mod test {
     use solana_sdk::{signature::Keypair, signer::Signer};
+    use crate::test_helpers::test_key;
 
-    // key for testing, do not use in production
-    const TEST_KEY: [u8; 64] = [79, 251, 195, 141, 225, 159, 25, 231, 191, 119, 234, 193, 148, 63, 41, 128, 173, 25, 165, 181, 193, 138, 45, 18, 67, 199, 63, 192, 102, 99, 183, 172, 89, 13, 108, 50, 130, 244, 101, 42, 181, 222, 140, 119, 245, 34, 13, 212, 240, 162, 32, 123, 95, 158, 133, 195, 152, 177, 87, 44, 213, 241, 249, 249];
     use super::*;
+
 
     #[test]
     fn test_derive_elgamal_keypair() {
@@ -91,7 +91,4 @@ mod test {
         assert_eq!(key, [21, 34, 125, 137, 145, 57, 110, 58, 128, 240, 23, 134, 231, 8, 47, 23]);
     }
 
-    fn test_key() -> Keypair {
-        Keypair::from_bytes(&TEST_KEY).unwrap()
-    }
 }
