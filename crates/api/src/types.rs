@@ -1,6 +1,7 @@
 use {
-    serde::{Deserialize, Serialize}, solana_sdk::{pubkey::Pubkey, signature::Signature},
-    crate::serde_utils
+    crate::serde_utils,
+    serde::{Deserialize, Serialize},
+    solana_sdk::{pubkey::Pubkey, signature::Signature},
 };
 
 /// JSON request used to initialize a confidential token account
@@ -13,12 +14,12 @@ pub struct Initialize {
     #[serde(with = "serde_utils::pubkey_string")]
     pub token_mint: Pubkey,
     /// The signed message of [b"ElGamalSecretKey", user_ata]
-    /// 
+    ///
     /// This is used to derive the ElGamal keypair
     #[serde(with = "serde_utils::signature_string")]
     pub elgamal_signature: Signature,
     /// The signed message of [b"AEKey", user_ata]
-    /// 
+    ///
     /// This is used to derive the AE key
     #[serde(with = "serde_utils::signature_string")]
     pub ae_signature: Signature,
@@ -32,35 +33,30 @@ pub struct ApiError {
 
 #[cfg(test)]
 mod test {
+    use super::*;
     use common::{key_generator::KeypairType, test_helpers::test_key};
     use solana_sdk::signer::Signer;
-    use super::*;
 
     #[test]
     fn test_initialize_serialization() {
         let key = test_key();
         let mint = Pubkey::new_unique();
-        let expected_elgamal_signature = key.sign_message(&KeypairType::ElGamal.message_to_sign(key.pubkey()));
-        let expected_ae_signature = key.sign_message(&KeypairType::Ae.message_to_sign(key.pubkey()));
+        let expected_elgamal_signature =
+            key.sign_message(&KeypairType::ElGamal.message_to_sign(key.pubkey()));
+        let expected_ae_signature =
+            key.sign_message(&KeypairType::Ae.message_to_sign(key.pubkey()));
 
         let init_msg: Initialize = serde_json::from_value(serde_json::json!({
             "authority": key.pubkey().to_string(),
             "token_mint": mint.to_string(),
             "elgamal_signature": expected_elgamal_signature.to_string(),
             "ae_signature": expected_ae_signature.to_string()
-        })).unwrap();
+        }))
+        .unwrap();
 
-        assert_eq!(
-            init_msg.authority, key.pubkey(),
-        );
-        assert_eq!(
-            init_msg.elgamal_signature, expected_elgamal_signature
-        );
-        assert_eq!(
-            init_msg.ae_signature, expected_ae_signature
-        );
-        assert_eq!(
-            init_msg.token_mint, mint
-        );
+        assert_eq!(init_msg.authority, key.pubkey(),);
+        assert_eq!(init_msg.elgamal_signature, expected_elgamal_signature);
+        assert_eq!(init_msg.ae_signature, expected_ae_signature);
+        assert_eq!(init_msg.token_mint, mint);
     }
 }

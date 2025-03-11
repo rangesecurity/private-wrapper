@@ -1,8 +1,8 @@
-
-
 pub mod pubkey_string {
     use {
-        serde::{Deserialize, Deserializer, Serializer}, solana_sdk::pubkey::Pubkey, std::str::FromStr
+        serde::{Deserialize, Deserializer, Serializer},
+        solana_sdk::pubkey::Pubkey,
+        std::str::FromStr,
     };
 
     pub fn serialize<S>(pubkey: &Pubkey, serializer: S) -> Result<S::Ok, S::Error>
@@ -23,7 +23,9 @@ pub mod pubkey_string {
 
 pub mod signature_string {
     use {
-        serde::{Deserialize, Deserializer, Serializer}, solana_sdk::signature::Signature, std::str::FromStr
+        serde::{Deserialize, Deserializer, Serializer},
+        solana_sdk::signature::Signature,
+        std::str::FromStr,
     };
 
     pub fn serialize<S>(signature: &Signature, serializer: S) -> Result<S::Ok, S::Error>

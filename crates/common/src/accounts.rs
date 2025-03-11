@@ -4,7 +4,7 @@ use {
     solana_sdk::account::Account,
     spl_token_2022::{
         extension::{BaseStateWithExtensions, ExtensionType, StateWithExtensions},
-        state::{Mint, Account as TokenAccount},
+        state::{Account as TokenAccount, Mint},
     },
 };
 
@@ -31,15 +31,12 @@ pub fn is_valid_mint(mint: Account) -> bool {
         .is_some()
 }
 
-
 /// Checks to see if the token account is already configured for confidential transfers
-/// 
+///
 /// Validates that:
 /// * The account is an spl_token_2022 token account
 /// * Supports the ConfidentialTransferAccount extension
-pub fn token_account_already_configured(
-    account: Account
-) -> bool {
+pub fn token_account_already_configured(account: Account) -> bool {
     let Ok(state) = StateWithExtensions::<TokenAccount>::unpack(&account.data) else {
         return false;
     };
@@ -49,9 +46,9 @@ pub fn token_account_already_configured(
     };
 
     extensions
-    .into_iter()
-    .find(|ext| ext.eq(&ExtensionType::ConfidentialTransferAccount))
-    .is_some()
+        .into_iter()
+        .find(|ext| ext.eq(&ExtensionType::ConfidentialTransferAccount))
+        .is_some()
 }
 
 #[cfg(test)]
@@ -60,7 +57,15 @@ mod test {
     use solana_sdk::{program_pack::Pack, pubkey::Pubkey};
     use solana_zk_sdk::encryption::{auth_encryption::AeKey, elgamal::ElGamalKeypair};
     use spl_pod::{optional_keys::OptionalNonZeroPubkey, primitives::PodBool};
-    use spl_token_2022::{extension::{confidential_transfer::{ConfidentialTransferAccount, ConfidentialTransferMint, EncryptedBalance}, BaseStateWithExtensionsMut, StateWithExtensionsMut}, state::AccountState};
+    use spl_token_2022::{
+        extension::{
+            confidential_transfer::{
+                ConfidentialTransferAccount, ConfidentialTransferMint, EncryptedBalance,
+            },
+            BaseStateWithExtensionsMut, StateWithExtensionsMut,
+        },
+        state::AccountState,
+    };
 
     use super::*;
 
@@ -73,38 +78,38 @@ mod test {
         };
         Mint::pack(mint, &mut account_data).unwrap();
 
-        assert!(
-            !is_valid_mint(Account {
-                data: account_data,
-                ..Default::default()
-            })
-        );
+        assert!(!is_valid_mint(Account {
+            data: account_data,
+            ..Default::default()
+        }));
     }
 
     #[test]
     fn test_is_valid_mint_not_a_mint() {
-        assert!(
-            !is_valid_mint(
-                Account {
-                    data: vec![1, 2, 3, 4],
-                    ..Default::default()
-                }
-            )
-        )
+        assert!(!is_valid_mint(Account {
+            data: vec![1, 2, 3, 4],
+            ..Default::default()
+        }))
     }
 
     #[test]
     fn test_is_valid_mint() {
-        let account_size = ExtensionType::try_calculate_account_len::<Mint>(&[ExtensionType::ConfidentialTransferMint]).unwrap();
+        let account_size = ExtensionType::try_calculate_account_len::<Mint>(&[
+            ExtensionType::ConfidentialTransferMint,
+        ])
+        .unwrap();
         let mut account_data = vec![0; account_size];
 
-        let mut state = StateWithExtensionsMut::<Mint>::unpack_uninitialized(&mut account_data).unwrap();
+        let mut state =
+            StateWithExtensionsMut::<Mint>::unpack_uninitialized(&mut account_data).unwrap();
 
-        let extension = state.init_extension::<ConfidentialTransferMint>(false).unwrap();
+        let extension = state
+            .init_extension::<ConfidentialTransferMint>(false)
+            .unwrap();
 
         extension.auto_approve_new_accounts = PodBool::from_bool(true);
         extension.authority = OptionalNonZeroPubkey::try_from(Some(Pubkey::new_unique())).unwrap();
-        
+
         state.base = Mint {
             supply: 1_000,
             is_initialized: true,
@@ -114,26 +119,18 @@ mod test {
         state.pack_base();
         state.init_account_type().unwrap();
 
-        assert!(
-            is_valid_mint(
-                Account {
-                    data: account_data,
-                    ..Default::default()
-                }
-            )
-        )
+        assert!(is_valid_mint(Account {
+            data: account_data,
+            ..Default::default()
+        }))
     }
 
     #[test]
     fn test_token_account_already_configured_not_a_token() {
-        assert!(
-            !token_account_already_configured(
-                Account {
-                    data: vec![1, 2, 3],
-                    ..Default::default()
-                }
-            )
-        );
+        assert!(!token_account_already_configured(Account {
+            data: vec![1, 2, 3],
+            ..Default::default()
+        }));
     }
 
     #[test]
@@ -146,28 +143,34 @@ mod test {
                 amount: 123,
                 ..Default::default()
             },
-            &mut account_data
-        ).unwrap();
-        assert!(
-            !token_account_already_configured(Account {
-                data: account_data,
-                ..Default::default()
-            })
-        );
+            &mut account_data,
+        )
+        .unwrap();
+        assert!(!token_account_already_configured(Account {
+            data: account_data,
+            ..Default::default()
+        }));
     }
 
     #[test]
     fn test_token_account_already_configured() {
-        let account_size = ExtensionType::try_calculate_account_len::<TokenAccount>(&[ExtensionType::ConfidentialTransferAccount]).unwrap();
+        let account_size = ExtensionType::try_calculate_account_len::<TokenAccount>(&[
+            ExtensionType::ConfidentialTransferAccount,
+        ])
+        .unwrap();
 
         let mut account_data = vec![0; account_size];
 
-        let mut state = StateWithExtensionsMut::<TokenAccount>::unpack_uninitialized(&mut account_data).unwrap();
+        let mut state =
+            StateWithExtensionsMut::<TokenAccount>::unpack_uninitialized(&mut account_data)
+                .unwrap();
 
         let elgamal_keypair = ElGamalKeypair::new_rand();
         let ae_keypair = AeKey::new_rand();
 
-        let extension = state.init_extension::<ConfidentialTransferAccount>(false).unwrap();
+        let extension = state
+            .init_extension::<ConfidentialTransferAccount>(false)
+            .unwrap();
         extension.approved = PodBool::from_bool(true);
         extension.elgamal_pubkey = elgamal_keypair.pubkey_owned().into();
         extension.maximum_pending_balance_credit_counter = 65536.into();
@@ -190,13 +193,9 @@ mod test {
         state.pack_base();
         state.init_account_type().unwrap();
 
-        assert!(
-            token_account_already_configured(
-                Account {
-                    data: account_data,
-                    ..Default::default()
-                }
-            )
-        )
+        assert!(token_account_already_configured(Account {
+            data: account_data,
+            ..Default::default()
+        }))
     }
 }

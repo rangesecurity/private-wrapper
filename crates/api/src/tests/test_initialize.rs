@@ -11,7 +11,9 @@ use crate::router;
 async fn test_initialize() {
     let key = test_key();
 
-    let router = router::new(Arc::new(RpcClient::new("https://api.devnet.solana.com".to_string())));
+    let router = router::new(Arc::new(RpcClient::new(
+        "https://api.devnet.solana.com".to_string(),
+    )));
 
     /*router.oneshot(
         Request::builder()

@@ -2,9 +2,21 @@ use {
     crate::{
         router::AppState,
         types::{ApiError, Initialize},
-    }, axum::{extract::State, response::IntoResponse, Json}, base64::{prelude::BASE64_STANDARD, Engine}, common::{accounts::token_account_already_configured, key_generator::{derive_ae_key, derive_elgamal_key, KeypairType}}, http::StatusCode, solana_sdk::transaction::Transaction, spl_token_2022::extension::{
-        confidential_transfer::instruction::{configure_account, PubkeyValidityProofData}, ExtensionType,
-    }, spl_token_confidential_transfer_proof_extraction::instruction::{ProofData, ProofLocation}, std::sync::Arc
+    },
+    axum::{extract::State, response::IntoResponse, Json},
+    base64::{prelude::BASE64_STANDARD, Engine},
+    common::{
+        accounts::token_account_already_configured,
+        key_generator::{derive_ae_key, derive_elgamal_key, KeypairType},
+    },
+    http::StatusCode,
+    solana_sdk::transaction::Transaction,
+    spl_token_2022::extension::{
+        confidential_transfer::instruction::{configure_account, PubkeyValidityProofData},
+        ExtensionType,
+    },
+    spl_token_confidential_transfer_proof_extraction::instruction::{ProofData, ProofLocation},
+    std::sync::Arc,
 };
 
 /// Handler which is used to construct the token account initialization transaction
@@ -90,9 +102,10 @@ pub async fn initialize(
             return (
                 StatusCode::BAD_REQUEST,
                 Json(ApiError {
-                    msg: "token account already configured for confidential transfers".to_string()
-                })
-            ).into_response()
+                    msg: "token account already configured for confidential transfers".to_string(),
+                }),
+            )
+                .into_response();
         }
     }
 
@@ -151,15 +164,16 @@ pub async fn initialize(
         &[],
         ProofLocation::InstructionOffset(
             1.try_into().unwrap(),
-            ProofData::InstructionData(&proof_data)
-        )
+            ProofData::InstructionData(&proof_data),
+        ),
     ) else {
         return (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(ApiError {
-                msg: "failed to generate configure instructions".to_string()
-            })
-        ).into_response()
+                msg: "failed to generate configure instructions".to_string(),
+            }),
+        )
+            .into_response();
     };
 
     // create the instructions to initialize the ata, and reallocate for confidential transfers
@@ -181,14 +195,14 @@ pub async fn initialize(
         )
         .unwrap(),
     ];
-    
+
     // update the instructions with account configuration
     instructions.append(&mut configure_instructions);
-    
+
     // create the transaction, bincode serialize it, and return it as a base64 encoded string
 
     let tx = Transaction::new_with_payer(&instructions, Some(&payload.authority));
-    
+
     let tx = match bincode::serialize(&tx) {
         Ok(tx) => tx,
         Err(err) => {
@@ -201,6 +215,6 @@ pub async fn initialize(
                 .into_response()
         }
     };
-    
+
     (StatusCode::OK, Json(BASE64_STANDARD.encode(tx))).into_response()
 }

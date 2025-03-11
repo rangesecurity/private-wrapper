@@ -10,25 +10,17 @@ use {
 #[derive(Clone, Copy)]
 pub enum KeypairType {
     ElGamal,
-    Ae
+    Ae,
 }
-
 
 impl KeypairType {
     /// Returns the message to sign to generate the corresponding keypair
-    pub fn message_to_sign(
-        self,
-        user_ata: Pubkey
-    ) -> Vec<u8> {
+    pub fn message_to_sign(self, user_ata: Pubkey) -> Vec<u8> {
         match self {
-            Self::ElGamal => {
-                [b"ElGamalSecretKey", &user_ata.to_bytes()[..]].concat()
-            }
-            Self::Ae => {
-                [b"AEKey", &user_ata.to_bytes()[..]].concat()
-            }
+            Self::ElGamal => [b"ElGamalSecretKey", &user_ata.to_bytes()[..]].concat(),
+            Self::Ae => [b"AEKey", &user_ata.to_bytes()[..]].concat(),
         }
-    }  
+    }
 }
 
 /// Derives an ElGamal key from a signature
@@ -37,7 +29,6 @@ pub fn derive_elgamal_key(signature: Signature) -> Result<ElGamalKeypair> {
         .map_err(|e| anyhow!("failed to derive elgamal keypair {e:#?}"))
 }
 
-
 /// Derives an Ae key from a signature
 pub fn derive_ae_key(signature: Signature) -> Result<AeKey> {
     AeKey::new_from_signature(&signature).map_err(|e| anyhow!("failed to derive ae keypair {e:#?}"))
@@ -45,11 +36,10 @@ pub fn derive_ae_key(signature: Signature) -> Result<AeKey> {
 
 #[cfg(test)]
 mod test {
-    use solana_sdk::{signature::Keypair, signer::Signer};
     use crate::test_helpers::test_key;
+    use solana_sdk::{signature::Keypair, signer::Signer};
 
     use super::*;
-
 
     #[test]
     fn test_derive_elgamal_keypair() {
@@ -69,7 +59,10 @@ mod test {
         let elgamal_pubkey = elgamal_key.pubkey().to_string();
 
         // ernsure the pubkey of the keypair we generated is expected
-        assert_eq!(elgamal_pubkey, "yK6ZeLGATEB+S/gR2xcNWotmym2AXeaM+1U0exawHB0=");
+        assert_eq!(
+            elgamal_pubkey,
+            "yK6ZeLGATEB+S/gR2xcNWotmym2AXeaM+1U0exawHB0="
+        );
     }
 
     #[test]
@@ -88,7 +81,9 @@ mod test {
 
         let key: [u8; 16] = From::from(ae_key);
 
-        assert_eq!(key, [21, 34, 125, 137, 145, 57, 110, 58, 128, 240, 23, 134, 231, 8, 47, 23]);
+        assert_eq!(
+            key,
+            [21, 34, 125, 137, 145, 57, 110, 58, 128, 240, 23, 134, 231, 8, 47, 23]
+        );
     }
-
 }
