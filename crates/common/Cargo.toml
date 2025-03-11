@@ -15,3 +15,8 @@ workspace = true
 workspace = true
 [dependencies.serde]
 workspace = true
+[dependencies.spl-token-2022]
+workspace = true
+
+[dev-dependencies.spl-pod]
+version = "0.5"
