@@ -14,26 +14,22 @@ use {
 /// Validates that:
 /// * The account is an spl_token_2022 mint account
 /// * Supports the ConfidentialTransferMint extension
-///
-/// # Errors
-///
-/// * Returns an error if mint account unpacking fails
-/// * Returns an error if extension lookup fails
-pub fn is_valid_mint(mint: Account) -> Result<bool> {
+pub fn is_valid_mint(mint: Account) -> bool {
     // unpack the token account
-    let state =
-        StateWithExtensions::<Mint>::unpack(&mint.data).with_context(|| "failed to unpack mint")?;
+    let Ok(state) = StateWithExtensions::<Mint>::unpack(&mint.data) else {
+        return false;
+    };
 
     // lookup extensions
-    let extensions = state
-        .get_extension_types()
-        .with_context(|| "failed to get extension types")?;
+    let Ok(extensions) = state.get_extension_types() else {
+        return false;
+    };
 
     // check to see if the ConfidentialTransferMint extension is supported
-    Ok(extensions
+    extensions
         .into_iter()
         .find(|ext| ext.eq(&ExtensionType::ConfidentialTransferMint))
-        .is_some())
+        .is_some()
 }
 
 
@@ -58,7 +54,7 @@ mod test {
             !is_valid_mint(Account {
                 data: account_data,
                 ..Default::default()
-            }).unwrap()
+            })
         );
     }
 
@@ -70,7 +66,7 @@ mod test {
                     data: vec![1, 2, 3, 4],
                     ..Default::default()
                 }
-            ).is_err()
+            )
         )
     }
 
@@ -101,7 +97,7 @@ mod test {
                     data: account_data,
                     ..Default::default()
                 }
-            ).unwrap()
+            )
         )
     }
 }

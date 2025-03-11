@@ -29,9 +29,17 @@ workspace = true
 workspace = true
 [dependencies.solana-sdk]
 workspace = true
+[dependencies.spl-associated-token-account]
+workspace = true
+[dependencies.spl-token-2022]
+workspace = true
+[dependencies.spl-token-confidential-transfer-proof-extraction]
+version = "0.2.1"
 [dependencies.common]
 path = "../common"
 
 [dev-dependencies.common]
 path = "../common"
 features = ["test-helpers"]
+[dev-dependencies.tower]
+version = "0.5"

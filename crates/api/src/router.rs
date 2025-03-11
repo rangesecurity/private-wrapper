@@ -5,7 +5,7 @@ use {
 };
 
 pub struct AppState {
-    rpc: Arc<RpcClient>
+    pub rpc: Arc<RpcClient>
 }
 
 pub fn new(rpc: Arc<RpcClient>) -> Router {

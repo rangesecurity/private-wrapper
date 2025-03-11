@@ -1,6 +1,10 @@
 pub mod types;
 pub mod handlers;
 pub mod router;
+pub mod serde_utils;
+
+#[cfg(test)]
+mod tests;
 
 use {
     anyhow::{Context, Result}, solana_client::nonblocking::rpc_client::RpcClient, std::sync::Arc
