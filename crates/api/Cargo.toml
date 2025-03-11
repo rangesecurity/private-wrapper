@@ -43,3 +43,7 @@ path = "../common"
 features = ["test-helpers"]
 [dev-dependencies.tower]
 version = "0.5"
+[dev-dependencies.spl-token-client]
+version = "0.14"
+[dev-dependencies.http-body-util]
+version = "0.1"
