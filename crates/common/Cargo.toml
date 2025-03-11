@@ -20,3 +20,5 @@ workspace = true
 
 [dev-dependencies.spl-pod]
 version = "0.5"
+[dev-dependencies.bytemuck]
+version = "1"
