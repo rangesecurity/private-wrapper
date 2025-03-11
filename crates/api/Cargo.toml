@@ -1,0 +1,33 @@
+[package]
+name = "api"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies.tokio]
+version = "1"
+features = ["full"]
+[dependencies.axum]
+version = "0.8"
+[dependencies.serde_json]
+version = "1"
+[dependencies.tower-http]
+version = "0.6"
+features = ["cors", "trace"]
+[dependencies.http]
+version = "1"
+[dependencies.tracing]
+version = "0.1"
+[dependencies.solana-client]
+version = "2.2.1"
+[dependencies.bincode]
+version = "1"
+[dependencies.base64]
+version = "0.22"
+[dependencies.serde]
+workspace = true
+[dependencies.anyhow]
+workspace = true
+[dependencies.solana-sdk]
+workspace = true
+[dependencies.common]
+path = "../common"

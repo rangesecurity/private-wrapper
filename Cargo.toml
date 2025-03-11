@@ -1,0 +1,9 @@
+[workspace]
+members = [ "crates/api","crates/common"]
+resolver = "2"
+
+[workspace.dependencies]
+solana-zk-sdk = "2.2.1"
+solana-sdk = "2.2.1"
+anyhow = "1"
+serde = {version = "1", features = ["derive"]}

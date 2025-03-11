@@ -1,0 +1,13 @@
+[package]
+name = "common"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies.solana-zk-sdk]
+workspace = true
+[dependencies.solana-sdk]
+workspace = true
+[dependencies.anyhow]
+workspace = true
+[dependencies.serde]
+workspace = true
