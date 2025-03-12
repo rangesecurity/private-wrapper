@@ -106,6 +106,12 @@ pub struct Transfer {
     /// Token account receiving the tokens
     #[serde(with = "serde_utils::pubkey_string")]
     pub receiving_token_account: Pubkey,
+    #[serde(with = "serde_utils::keypair_string")]
+    pub equality_proof_keypair: Keypair,
+    #[serde(with = "serde_utils::keypair_string")]
+    pub ciphertext_validity_proof_keypair: Keypair,
+    #[serde(with = "serde_utils::keypair_string")]
+    pub range_proof_keypair: Keypair,
     /// Amount of tokens to transfer
     pub amount: u64,
 }

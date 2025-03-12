@@ -35,10 +35,7 @@ pub fn new(rpc: Arc<RpcClient>) -> Router {
         )
         .route("/confidential-balances/deposit", post(handlers::deposit))
         .route("/confidential-balances/withdraw", post(handlers::withdraw))
-        .route(
-            "/confidential-balances/transfer",
-            post(|| async { "hello" }),
-        )
+        .route("/confidential-balances/transfer", post(handlers::transfer))
         .route("/confidential-balances/apply", post(handlers::apply))
         .with_state(Arc::new(AppState { rpc }))
         .layer(
