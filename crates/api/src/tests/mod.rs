@@ -136,8 +136,8 @@ impl BlinkTestClient {
             amount,
             elgamal_signature: elgamal_sig,
             ae_signature: ae_sig,
-            equality_proof_keypair: equality_proof_keypair.to_base58_string(),
-            range_proof_keypair: range_proof_keypair.to_base58_string(),
+            equality_proof_keypair: equality_proof_keypair.insecure_clone(),
+            range_proof_keypair: range_proof_keypair.insecure_clone(),
         };
         let res = self
             .server
@@ -151,25 +151,20 @@ impl BlinkTestClient {
         // we cant use the send_tx helper here as we need to sign with equality + range proofs
         for (idx, mut tx) in txs.into_iter().enumerate() {
             if idx == 0 {
-                println!("signing tx0");
                 tx.sign(
                     &vec![key, &equality_proof_keypair, &range_proof_keypair],
                     self.rpc.get_latest_blockhash().await.unwrap(),
                 );
             } else if idx == 1 {
-                println!("signing tx1");
                 tx.sign(&vec![key], self.rpc.get_latest_blockhash().await.unwrap());
             } else if idx == 2 {
-                println!("signing tx2");
                 tx.sign(&vec![key], self.rpc.get_latest_blockhash().await.unwrap());
             } else if idx == 3 {
-                println!("signing tx3");
                 tx.sign(
                     &vec![key],
                     self.rpc.get_latest_blockhash().await.unwrap(),
                 );
             }
-            println!("sending tx({idx})");
             self.rpc.send_and_confirm_transaction(&tx).await.unwrap();
         }
     }

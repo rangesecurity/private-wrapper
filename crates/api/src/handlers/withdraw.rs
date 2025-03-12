@@ -214,10 +214,6 @@ pub async fn withdraw(
     // Confidential Transfer extension information needed to construct a `Withdraw` instruction.
     let withdraw_account_info = WithdrawAccountInfo::new(confidential_transfer_account);
 
-
-    let equality_proof_keypair = Keypair::from_base58_string(&payload.equality_proof_keypair);
-    let range_proof_keypair = Keypair::from_base58_string(&payload.range_proof_keypair);
-
     // Create a withdraw proof data
     let WithdrawProofData {
         equality_proof_data,
@@ -277,7 +273,7 @@ pub async fn withdraw(
     let (range_create_ix, range_verify_ix) =
         match get_zk_proof_context_state_account_creation_instructions(
             &payload.authority,
-            &range_proof_keypair.pubkey(),
+            &payload.range_proof_keypair.pubkey(),
             &payload.authority,
             &range_proof_data,
             range_proof_rent,
@@ -298,7 +294,7 @@ pub async fn withdraw(
     let (equality_create_ix, equality_verify_ix) =
         match get_zk_proof_context_state_account_creation_instructions(
             &payload.authority,
-            &equality_proof_keypair.pubkey(),
+            &payload.equality_proof_keypair.pubkey(),
             &payload.authority,
             &equality_proof_data,
             equality_proof_rent,
@@ -343,8 +339,8 @@ pub async fn withdraw(
             &new_decryptable_available_balance.into(),
             &payload.authority,
             &vec![],
-            ProofLocation::ContextStateAccount(&equality_proof_keypair.pubkey()),
-            ProofLocation::ContextStateAccount(&range_proof_keypair.pubkey()),
+            ProofLocation::ContextStateAccount(&payload.equality_proof_keypair.pubkey()),
+            ProofLocation::ContextStateAccount(&payload.range_proof_keypair.pubkey()),
         )
         .unwrap();
         Transaction::new_with_payer(&instructions, Some(&payload.authority))
@@ -354,7 +350,7 @@ pub async fn withdraw(
         // Close the equality proof account
         let close_equality_proof_instruction = close_context_state(
             ContextStateInfo {
-                context_state_account: &equality_proof_keypair.pubkey(),
+                context_state_account: &payload.equality_proof_keypair.pubkey(),
                 context_state_authority: &payload.authority,
             },
             &payload.authority,
@@ -363,7 +359,7 @@ pub async fn withdraw(
         // Close the range proof account
         let close_range_proof_instruction = close_context_state(
             ContextStateInfo {
-                context_state_account: &range_proof_keypair.pubkey(),
+                context_state_account: &payload.range_proof_keypair.pubkey(),
                 context_state_authority: &payload.authority,
             },
             &payload.authority,
