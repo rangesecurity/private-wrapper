@@ -160,10 +160,7 @@ impl BlinkTestClient {
             } else if idx == 2 {
                 tx.sign(&vec![key], self.rpc.get_latest_blockhash().await.unwrap());
             } else if idx == 3 {
-                tx.sign(
-                    &vec![key],
-                    self.rpc.get_latest_blockhash().await.unwrap(),
-                );
+                tx.sign(&vec![key], self.rpc.get_latest_blockhash().await.unwrap());
             }
             self.rpc.send_and_confirm_transaction(&tx).await.unwrap();
         }
@@ -241,17 +238,18 @@ impl BlinkTestClient {
 
             let sig = self.rpc.send_and_confirm_transaction(&tx).await.unwrap();
             // ensure the tx was confirmed
-            let _ = self.rpc
-                    .get_transaction_with_config(
-                        &sig,
-                        RpcTransactionConfig {
-                            encoding: Some(UiTransactionEncoding::JsonParsed),
-                            max_supported_transaction_version: Some(1),
-                            ..Default::default()
-                        }
-                    )
-                    .await
-                    .unwrap();
+            let _ = self
+                .rpc
+                .get_transaction_with_config(
+                    &sig,
+                    RpcTransactionConfig {
+                        encoding: Some(UiTransactionEncoding::JsonParsed),
+                        max_supported_transaction_version: Some(1),
+                        ..Default::default()
+                    },
+                )
+                .await
+                .unwrap();
         }
     }
 }

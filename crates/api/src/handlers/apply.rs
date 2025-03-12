@@ -157,7 +157,7 @@ pub async fn apply(
         };
 
     // ensure the token mint is valid for confidential transfers
-    if !common::accounts::is_valid_mint(token_mint) {
+    if !common::accounts::is_valid_mint(&token_mint) {
         return (
             StatusCode::BAD_REQUEST,
             Json(ApiError {

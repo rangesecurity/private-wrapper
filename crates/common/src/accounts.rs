@@ -13,7 +13,7 @@ use {
 /// Validates that:
 /// * The account is an spl_token_2022 mint account
 /// * Supports the ConfidentialTransferMint extension
-pub fn is_valid_mint(mint: Account) -> bool {
+pub fn is_valid_mint(mint: &Account) -> bool {
     // unpack the mint account
     let Ok(state) = StateWithExtensions::<Mint>::unpack(&mint.data) else {
         return false;
@@ -78,7 +78,7 @@ mod test {
         };
         Mint::pack(mint, &mut account_data).unwrap();
 
-        assert!(!is_valid_mint(Account {
+        assert!(!is_valid_mint(&Account {
             data: account_data,
             ..Default::default()
         }));
@@ -86,7 +86,7 @@ mod test {
 
     #[test]
     fn test_is_valid_mint_not_a_mint() {
-        assert!(!is_valid_mint(Account {
+        assert!(!is_valid_mint(&Account {
             data: vec![1, 2, 3, 4],
             ..Default::default()
         }))
@@ -119,7 +119,7 @@ mod test {
         state.pack_base();
         state.init_account_type().unwrap();
 
-        assert!(is_valid_mint(Account {
+        assert!(is_valid_mint(&Account {
             data: account_data,
             ..Default::default()
         }))

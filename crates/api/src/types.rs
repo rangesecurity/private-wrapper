@@ -85,6 +85,31 @@ pub struct Withdraw {
     pub range_proof_keypair: Keypair,
 }
 
+/// JSON request used to transfer confidential token balances
+#[derive(Serialize, Deserialize)]
+pub struct Transfer {
+    /// Authority transferring tokens
+    #[serde(with = "serde_utils::pubkey_string")]
+    pub authority: Pubkey,
+    #[serde(with = "serde_utils::pubkey_string")]
+    pub token_mint: Pubkey,
+    /// The signed message of [b"ElGamalSecretKey", user_ata]
+    ///
+    /// This is used to derive the ElGamal keypair
+    #[serde(with = "serde_utils::signature_string")]
+    pub elgamal_signature: Signature,
+    /// The signed message of [b"AEKey", user_ata]
+    ///
+    /// This is used to derive the AE key
+    #[serde(with = "serde_utils::signature_string")]
+    pub ae_signature: Signature,
+    /// Token account receiving the tokens
+    #[serde(with = "serde_utils::pubkey_string")]
+    pub receiving_token_account: Pubkey,
+    /// Amount of tokens to transfer
+    pub amount: u64,
+}
+
 /// JSON response indicating an error message
 #[derive(Serialize, Deserialize)]
 pub struct ApiError {
