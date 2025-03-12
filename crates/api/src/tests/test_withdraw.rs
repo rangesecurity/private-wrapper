@@ -24,17 +24,26 @@ use tower::ServiceExt;
 use super::{get_user_ata, MINT_AMOUNT};
 
 #[tokio::test(flavor = "multi_thread")]
-async fn test_deposit() {
+async fn test_withdraw() {
     let key = test_key();
     let mint = Keypair::new();
     let rpc = Arc::new(RpcClient::new("http://localhost:8899".to_string()));
-
+    let balance = rpc.get_balance(&key.pubkey()).await.unwrap();
+    rpc.request_airdrop(&key.pubkey(), spl_token_2022::ui_amount_to_amount(10000.0, 9)).await.unwrap();
+    // running into issues with the test validator not confirming fast enough
+    loop {
+        let new_balance = rpc.get_balance(&key.pubkey()).await.unwrap();
+        if new_balance > balance {
+            break;
+        }
+        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+    }
     let mut test_client = BlinkTestClient::new(rpc);
 
     test_client.create_confidential_mint(&key, &mint).await;
 
     test_client.test_initialize(&key, &mint).await;
-
+    
     test_client.mint_tokens(&key, &mint, 1_000_000).await;
 
     assert_eq!(
@@ -48,5 +57,6 @@ async fn test_deposit() {
         1_000_000
     );
 
-    test_client.test_deposit(&key, &mint, spl_token_2022::ui_amount_to_amount(1.0, 9)).await;
+    test_client.test_deposit(&key, &mint, 200).await;
+    test_client.test_withdraw(&key, &mint, 100).await;
 }

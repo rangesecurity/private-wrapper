@@ -214,19 +214,20 @@ pub async fn withdraw(
     // Confidential Transfer extension information needed to construct a `Withdraw` instruction.
     let withdraw_account_info = WithdrawAccountInfo::new(confidential_transfer_account);
 
+    println!("available balance {}", ae_key.decrypt(&withdraw_account_info.decryptable_available_balance.try_into().unwrap()).unwrap());
+
     // Create a withdraw proof data
-    let Ok(WithdrawProofData {
+    let WithdrawProofData {
         equality_proof_data,
         range_proof_data,
-    }) = withdraw_account_info.generate_proof_data(payload.amount, &elgamal_key, &ae_key)
-    else {
-        return (
+    } = match withdraw_account_info.generate_proof_data(payload.amount, &elgamal_key, &ae_key) {
+        Ok(proof) => proof,
+        Err(err) => return (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(ApiError {
-                msg: "failed to generate withdraw proof".to_string(),
-            }),
-        )
-            .into_response();
+                msg: format!("failed to generate withdraw proof {err:#?}")
+            })
+        ).into_response()
     };
 
     let range_proof_rent = match state

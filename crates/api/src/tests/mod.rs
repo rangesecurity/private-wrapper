@@ -1,8 +1,9 @@
-use solana_client::nonblocking::rpc_client::RpcClient;
+use solana_client::{nonblocking::rpc_client::RpcClient, rpc_config::RpcTransactionConfig};
 use solana_sdk::{
     pubkey::Pubkey, signature::Keypair, signer::Signer, system_instruction,
     transaction::Transaction,
 };
+use solana_transaction_status_client_types::UiTransactionEncoding;
 use spl_token_2022::{extension::ExtensionType, state::Mint};
 use spl_token_client::token::ExtensionInitializationParams;
 use std::sync::Arc;
@@ -22,6 +23,7 @@ use http::Request;
 use http_body_util::BodyExt;
 use tower::ServiceExt;
 
+pub mod test_withdraw;
 pub mod test_deposit;
 pub mod test_initialize;
 
@@ -60,7 +62,7 @@ impl BlinkTestClient {
         let response: ApiResponse = serde_json::from_slice(res.as_bytes()).unwrap();
         self.send_tx(key, response).await;
     }
-    async fn test_deposit(&mut self, key: &Keypair, mint: &Keypair) {
+    async fn test_deposit(&mut self, key: &Keypair, mint: &Keypair, amount: u64) {
         let user_ata = get_user_ata(key, mint);
         let elgamal_sig = key.sign_message(&KeypairType::ElGamal.message_to_sign(user_ata));
         let ae_sig = key.sign_message(&KeypairType::Ae.message_to_sign(user_ata));
@@ -68,7 +70,7 @@ impl BlinkTestClient {
         let deposit = DepositOrWithdraw {
             authority: key.pubkey(),
             token_mint: mint.pubkey(),
-            amount: 100_000,
+            amount,
             elgamal_signature: elgamal_sig,
             ae_signature: ae_sig,
         };
@@ -79,6 +81,29 @@ impl BlinkTestClient {
             .bytes(serde_json::to_string(&deposit).unwrap().into())
             .await;
         let response: ApiResponse = serde_json::from_slice(res.as_bytes()).unwrap();
+        self.send_tx(key, response).await;
+    }
+    async fn test_withdraw(&mut self, key: &Keypair, mint: &Keypair, amount: u64) {
+        let user_ata = get_user_ata(key, mint);
+        let elgamal_sig = key.sign_message(&KeypairType::ElGamal.message_to_sign(user_ata));
+        let ae_sig = key.sign_message(&KeypairType::Ae.message_to_sign(user_ata));
+
+        let withdraw = DepositOrWithdraw {
+            authority: key.pubkey(),
+            token_mint: mint.pubkey(),
+            amount,
+            elgamal_signature: elgamal_sig,
+            ae_signature: ae_sig,
+        };
+        let res = self
+            .server
+            .post("/confidential-balances/withdraw")
+            .add_header("Content-Type", "application/json")
+            .bytes(serde_json::to_string(&withdraw).unwrap().into())
+            .await;
+        let res = String::from_utf8(res.as_bytes().to_vec()).unwrap();
+        println!("{res}");
+        let response: ApiResponse = serde_json::from_str(&res).unwrap();
         self.send_tx(key, response).await;
     }
     async fn create_confidential_mint(&mut self, key: &Keypair, mint: &Keypair) {
@@ -117,7 +142,7 @@ impl BlinkTestClient {
                     &mint.pubkey(),
                     &key.pubkey(),
                     None,
-                    9,
+                    6,
                 )
                 .unwrap(),
             ],
@@ -130,7 +155,7 @@ impl BlinkTestClient {
 
         self.rpc.send_and_confirm_transaction(&tx).await.unwrap();
     }
-    async fn mint_tokens(&mut self, key: &Keypair, mint: &Keypair) {
+    async fn mint_tokens(&mut self, key: &Keypair, mint: &Keypair, amount: u64) {
         let mut tx = Transaction::new_with_payer(
             &[spl_token_2022::instruction::mint_to(
                 &spl_token_2022::id(),
@@ -138,7 +163,7 @@ impl BlinkTestClient {
                 &get_user_ata(key, mint),
                 &key.pubkey(),
                 &[&key.pubkey()],
-                MINT_AMOUNT,
+                amount,
             )
             .unwrap()],
             Some(&key.pubkey()),
@@ -151,7 +176,15 @@ impl BlinkTestClient {
         for mut tx in transactions {
             tx.sign(&vec![&key], self.rpc.get_latest_blockhash().await.unwrap());
 
-            self.rpc.send_and_confirm_transaction(&tx).await.unwrap();
+            let sig = self.rpc.send_and_confirm_transaction(&tx).await.unwrap();
+            println!("{:#?}", self.rpc.get_transaction_with_config(
+                &sig,
+                RpcTransactionConfig {
+                    encoding: Some(UiTransactionEncoding::JsonParsed),
+                    max_supported_transaction_version: Some(1),
+                    ..Default::default()
+                }
+            ).await.unwrap());
         }
     }
 }
