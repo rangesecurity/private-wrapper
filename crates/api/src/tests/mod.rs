@@ -156,11 +156,7 @@ impl BlinkTestClient {
                     &vec![key, &equality_proof_keypair, &range_proof_keypair],
                     self.rpc.get_latest_blockhash().await.unwrap(),
                 );
-            } else if idx == 1 {
-                tx.sign(&vec![key], self.rpc.get_latest_blockhash().await.unwrap());
-            } else if idx == 2 {
-                tx.sign(&vec![key], self.rpc.get_latest_blockhash().await.unwrap());
-            } else if idx == 3 {
+            } else {
                 tx.sign(&vec![key], self.rpc.get_latest_blockhash().await.unwrap());
             }
             self.rpc.send_and_confirm_transaction(&tx).await.unwrap();
@@ -210,14 +206,10 @@ impl BlinkTestClient {
         for (idx, mut tx) in txs.into_iter().enumerate() {
             if idx == 0 {
                 tx.sign(
-                    &vec![key, &equality_proof_keypair, &range_proof_keypair],
+                    &vec![key, &equality_proof_keypair, &range_proof_keypair, &ciphertext_proof_keypair],
                     self.rpc.get_latest_blockhash().await.unwrap(),
                 );
-            } else if idx == 1 {
-                tx.sign(&vec![key], self.rpc.get_latest_blockhash().await.unwrap());
-            } else if idx == 2 {
-                tx.sign(&vec![key], self.rpc.get_latest_blockhash().await.unwrap());
-            } else if idx == 3 {
+            } else {
                 tx.sign(&vec![key], self.rpc.get_latest_blockhash().await.unwrap());
             }
             self.rpc.send_and_confirm_transaction(&tx).await.unwrap();

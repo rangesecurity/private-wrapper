@@ -48,6 +48,9 @@ async fn test_transfer() {
         1_000_000
     );
 
+    // delay the initialization of key2 token account to allow airdrop request to bul confirmed
+    test_client.test_initialize(&key2, &mint).await;
+    
     test_client.test_deposit(&key, &mint, 100).await;
     test_client.test_apply(&key, &mint).await;
 
@@ -57,4 +60,6 @@ async fn test_transfer() {
         &key2,
         10
     ).await;
+
+    test_client.test_apply(&key2, &mint).await;
 }
