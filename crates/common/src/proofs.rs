@@ -24,12 +24,6 @@ pub fn get_zk_proof_context_state_account_creation_instructions<
     solana_sdk::instruction::Instruction,
 )> {
     let space = size_of::<zk_elgamal_proof_program::state::ProofContextState<U>>();
-    println!("📊 Context state account space required: {} bytes", space);
-    println!(
-        "💰 Using provided rent for context state account: {} lamports",
-        rent
-    );
-
     let context_state_info = ContextStateInfo {
         context_state_account: context_state_account_pubkey,
         context_state_authority: context_state_authority_pubkey,
@@ -37,8 +31,6 @@ pub fn get_zk_proof_context_state_account_creation_instructions<
 
     let instruction_type = zk_proof_type_to_instruction(ZK::PROOF_TYPE)?;
 
-    println!("🔧 Creating context state account with inputs: fee_payer={}, context_state_account={}, rent={}, space={}", 
-        fee_payer_pubkey, context_state_account_pubkey, rent, space);
     let create_account_ix = system_instruction::create_account(
         fee_payer_pubkey,
         context_state_account_pubkey,

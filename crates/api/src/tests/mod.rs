@@ -41,7 +41,7 @@ impl BlinkTestClient {
         {
             let test_key = test_key().pubkey();
             let balance = rpc.get_balance(&test_key).await.unwrap();
-            rpc.request_airdrop(&test_key, spl_token_2022::ui_amount_to_amount(100000.0, 9))
+            rpc.request_airdrop(&test_key, spl_token_2022::ui_amount_to_amount(100.0, 9))
                 .await
                 .unwrap();
             loop {
@@ -58,6 +58,7 @@ impl BlinkTestClient {
         }
     }
     async fn test_initialize(&mut self, key: &Keypair, mint: &Keypair) {
+        println!("initializing confidential token account");
         let user_ata = get_user_ata(key, mint);
         let elgamal_sig = key.sign_message(&KeypairType::ElGamal.message_to_sign(user_ata));
         let ae_sig = key.sign_message(&KeypairType::Ae.message_to_sign(user_ata));
@@ -78,6 +79,7 @@ impl BlinkTestClient {
         self.send_tx(key, response).await;
     }
     async fn test_deposit(&mut self, key: &Keypair, mint: &Keypair, amount: u64) {
+        println!("depositing to pending balance");
         let user_ata = get_user_ata(key, mint);
         let elgamal_sig = key.sign_message(&KeypairType::ElGamal.message_to_sign(user_ata));
         let ae_sig = key.sign_message(&KeypairType::Ae.message_to_sign(user_ata));
@@ -99,6 +101,7 @@ impl BlinkTestClient {
         self.send_tx(key, response).await;
     }
     async fn test_apply(&mut self, key: &Keypair, mint: &Keypair) {
+        println!("applying pending balance");
         let user_ata = get_user_ata(key, mint);
         let elgamal_sig = key.sign_message(&KeypairType::ElGamal.message_to_sign(user_ata));
         let ae_sig = key.sign_message(&KeypairType::Ae.message_to_sign(user_ata));
@@ -119,6 +122,7 @@ impl BlinkTestClient {
         self.send_tx(key, response).await;
     }
     async fn test_withdraw(&mut self, key: &Keypair, mint: &Keypair, amount: u64) {
+        println!("withdrawing confidential tokens");
         let user_ata = get_user_ata(key, mint);
         let elgamal_sig = key.sign_message(&KeypairType::ElGamal.message_to_sign(user_ata));
         let ae_sig = key.sign_message(&KeypairType::Ae.message_to_sign(user_ata));
@@ -132,8 +136,8 @@ impl BlinkTestClient {
             amount,
             elgamal_signature: elgamal_sig,
             ae_signature: ae_sig,
-            equality_proof_keypair: equality_proof_keypair.insecure_clone(),
-            range_proof_keypair: range_proof_keypair.insecure_clone(),
+            equality_proof_keypair: equality_proof_keypair.to_base58_string(),
+            range_proof_keypair: range_proof_keypair.to_base58_string(),
         };
         let res = self
             .server
@@ -146,18 +150,22 @@ impl BlinkTestClient {
         let txs = response.decode_transactions().unwrap();
         // we cant use the send_tx helper here as we need to sign with equality + range proofs
         for (idx, mut tx) in txs.into_iter().enumerate() {
-            if idx == 1 {
+            if idx == 0 {
+                println!("signing tx0");
                 tx.sign(
                     &vec![key, &equality_proof_keypair, &range_proof_keypair],
                     self.rpc.get_latest_blockhash().await.unwrap(),
                 );
+            } else if idx == 1 {
+                println!("signing tx1");
+                tx.sign(&vec![key], self.rpc.get_latest_blockhash().await.unwrap());
             } else if idx == 2 {
+                println!("signing tx2");
                 tx.sign(&vec![key], self.rpc.get_latest_blockhash().await.unwrap());
             } else if idx == 3 {
-                tx.sign(&vec![key], self.rpc.get_latest_blockhash().await.unwrap());
-            } else if idx == 4 {
+                println!("signing tx3");
                 tx.sign(
-                    &vec![key, &equality_proof_keypair, &range_proof_keypair],
+                    &vec![key],
                     self.rpc.get_latest_blockhash().await.unwrap(),
                 );
             }
@@ -166,6 +174,7 @@ impl BlinkTestClient {
         }
     }
     async fn create_confidential_mint(&mut self, key: &Keypair, mint: &Keypair) {
+        println!("creating confidential mint");
         let space = ExtensionType::try_calculate_account_len::<Mint>(&[
             ExtensionType::ConfidentialTransferMint,
         ])
@@ -236,9 +245,8 @@ impl BlinkTestClient {
             tx.sign(&vec![&key], self.rpc.get_latest_blockhash().await.unwrap());
 
             let sig = self.rpc.send_and_confirm_transaction(&tx).await.unwrap();
-            println!(
-                "{:#?}",
-                self.rpc
+            // ensure the tx was confirmed
+            let _ = self.rpc
                     .get_transaction_with_config(
                         &sig,
                         RpcTransactionConfig {
@@ -248,8 +256,7 @@ impl BlinkTestClient {
                         }
                     )
                     .await
-                    .unwrap()
-            );
+                    .unwrap();
         }
     }
 }

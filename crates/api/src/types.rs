@@ -78,11 +78,11 @@ pub struct Withdraw {
     /// The amount of tokens to deposit or withdraw in lamports
     pub amount: u64,
     /// The keypair to be used for the equality proof
-    #[serde(with = "serde_utils::keypair_string")]
-    pub equality_proof_keypair: Keypair,
+    //#[serde(with = "serde_utils::keypair_string")]
+    pub equality_proof_keypair: String,
     /// The keypair to be used for the range proof
-    #[serde(with = "serde_utils::keypair_string")]
-    pub range_proof_keypair: Keypair,
+    //#[serde(with = "serde_utils::keypair_string")]
+    pub range_proof_keypair: String,
 }
 
 /// JSON response indicating an error message
