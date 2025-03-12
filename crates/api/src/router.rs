@@ -34,10 +34,7 @@ pub fn new(rpc: Arc<RpcClient>) -> Router {
             post(handlers::initialize),
         )
         .route("/confidential-balances/deposit", post(handlers::deposit))
-        .route(
-            "/confidential-balances/withdraw",
-            post(|| async { "hello" }),
-        )
+        .route("/confidential-balances/withdraw", post(handlers::withdraw))
         .route(
             "/confidential-balances/transfer",
             post(|| async { "hello" }),

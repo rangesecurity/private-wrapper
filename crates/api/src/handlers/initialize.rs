@@ -1,7 +1,7 @@
 use {
     crate::{
         router::AppState,
-        types::{ApiError, Initialize},
+        types::{ApiError, ApiResponse, Initialize},
     },
     axum::{extract::State, response::IntoResponse, Json},
     base64::{prelude::BASE64_STANDARD, Engine},
@@ -215,6 +215,11 @@ pub async fn initialize(
                 .into_response()
         }
     };
-
-    (StatusCode::OK, Json(BASE64_STANDARD.encode(tx))).into_response()
+    (
+        StatusCode::OK,
+        Json(ApiResponse {
+            transactions: vec![BASE64_STANDARD.encode(tx)],
+        }),
+    )
+        .into_response()
 }

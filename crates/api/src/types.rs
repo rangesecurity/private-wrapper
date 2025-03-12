@@ -1,7 +1,9 @@
 use {
     crate::serde_utils,
+    anyhow::Context,
+    base64::{prelude::BASE64_STANDARD, Engine},
     serde::{Deserialize, Serialize},
-    solana_sdk::{pubkey::Pubkey, signature::Signature},
+    solana_sdk::{pubkey::Pubkey, signature::Signature, transaction::Transaction},
 };
 
 /// JSON request used to initialize a confidential token account
@@ -26,8 +28,9 @@ pub struct Initialize {
 }
 
 /// JSON request used to deposit from non-confidential balance to pending balance
+///
 #[derive(Serialize, Deserialize)]
-pub struct Deposit {
+pub struct DepositOrWithdraw {
     /// The public key of the wallet which is depositing tokens
     #[serde(with = "serde_utils::pubkey_string")]
     pub authority: Pubkey,
@@ -44,14 +47,41 @@ pub struct Deposit {
     /// This is used to derive the AE key
     #[serde(with = "serde_utils::signature_string")]
     pub ae_signature: Signature,
-    /// The amount of tokens to deposit in lamports
-    pub deposit_amount: u64,
+    /// The amount of tokens to deposit or withdraw in lamports
+    pub amount: u64,
 }
 
 /// JSON response indicating an error message
 #[derive(Serialize, Deserialize)]
 pub struct ApiError {
     pub msg: String,
+}
+
+/// JSON response containing one or more transactions
+#[derive(Serialize, Deserialize)]
+pub struct ApiResponse {
+    /// Transactions returned by the confidential blink api
+    ///
+    /// If multiple transactions are returned, they must be executed in sequence
+    pub transactions: Vec<String>,
+}
+
+impl ApiResponse {
+    /// Returns a vec of decoded transactions, consuming the response
+    pub fn decode_transactions(self) -> anyhow::Result<Vec<Transaction>> {
+        let mut transactions = Vec::with_capacity(self.transactions.len());
+        for tx in self.transactions {
+            transactions.push(
+                bincode::deserialize(
+                    &BASE64_STANDARD
+                        .decode(tx)
+                        .with_context(|| "failed to decode transaction")?,
+                )
+                .with_context(|| "failed to deserialize transaction")?,
+            );
+        }
+        Ok(transactions)
+    }
 }
 
 #[cfg(test)]

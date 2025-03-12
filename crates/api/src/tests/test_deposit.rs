@@ -3,7 +3,7 @@ use std::sync::Arc;
 use crate::{
     router,
     tests::BlinkTestClient,
-    types::{ApiResponse, Initialize},
+    types::{ApiResponse, DepositOrWithdraw, Initialize},
 };
 use axum::body::{Body, Bytes};
 use axum_test::{TestResponse, TestServer};
@@ -24,23 +24,29 @@ use tower::ServiceExt;
 use super::{get_user_ata, MINT_AMOUNT};
 
 #[tokio::test(flavor = "multi_thread")]
-async fn test_initialize() {
+async fn test_deposit() {
     let key = test_key();
     let mint = Keypair::new();
-    let rpc = Arc::new(RpcClient::new_with_commitment(
-        "http://localhost:8899".to_string(),
-        CommitmentConfig::confirmed(),
-    ));
+    let rpc = Arc::new(RpcClient::new("http://localhost:8899".to_string()));
 
     let mut test_client = BlinkTestClient::new(rpc);
-
-    test_client
-        .rpc
-        .request_airdrop(&key.pubkey(), 100_000_000_000)
-        .await
-        .unwrap();
 
     test_client.create_confidential_mint(&key, &mint).await;
 
     test_client.test_initialize(&key, &mint).await;
+
+    test_client.mint_tokens(&key, &mint).await;
+
+    assert_eq!(
+        test_client
+            .rpc
+            .get_token_account_balance(&get_user_ata(&key, &mint))
+            .await
+            .unwrap()
+            .ui_amount
+            .unwrap(),
+        100.0
+    );
+
+    test_client.test_deposit(&key, &mint).await;
 }

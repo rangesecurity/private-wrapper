@@ -1,7 +1,7 @@
 use {
     crate::{
         router::AppState,
-        types::{ApiError, Deposit},
+        types::{ApiError, ApiResponse, DepositOrWithdraw},
     },
     axum::{extract::State, response::IntoResponse, Json},
     base64::{prelude::BASE64_STANDARD, Engine},
@@ -28,7 +28,7 @@ use {
 /// * Insufficient token amount
 pub async fn deposit(
     State(state): State<Arc<AppState>>,
-    Json(payload): Json<Deposit>,
+    Json(payload): Json<DepositOrWithdraw>,
 ) -> impl IntoResponse {
     // derive the ATA for the authority + token_mint
     let user_ata = spl_associated_token_account::get_associated_token_address_with_program_id(
@@ -229,7 +229,7 @@ pub async fn deposit(
                 &spl_token_2022::id(),
                 &user_ata,
                 &payload.token_mint,
-                payload.deposit_amount,
+                payload.amount,
                 decimals,
                 &payload.authority,
                 &[&payload.authority],
@@ -261,6 +261,11 @@ pub async fn deposit(
                 .into_response()
         }
     };
-
-    (StatusCode::OK, Json(BASE64_STANDARD.encode(tx))).into_response()
+    (
+        StatusCode::OK,
+        Json(ApiResponse {
+            transactions: vec![BASE64_STANDARD.encode(tx)],
+        }),
+    )
+        .into_response()
 }
