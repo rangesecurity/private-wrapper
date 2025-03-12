@@ -10,7 +10,7 @@ use std::sync::Arc;
 
 use crate::{
     router,
-    types::{ApiResponse, DepositOrWithdraw, InitializeOrApply},
+    types::{ApiResponse, Deposit, InitializeOrApply, Withdraw},
 };
 use axum::body::{Body, Bytes};
 use axum_test::{TestResponse, TestServer};
@@ -23,9 +23,9 @@ use http::Request;
 use http_body_util::BodyExt;
 use tower::ServiceExt;
 
-pub mod test_withdraw;
 pub mod test_deposit;
 pub mod test_initialize;
+pub mod test_withdraw;
 
 /// 100.0 with 9 decimals
 pub const MINT_AMOUNT: u64 = 100000000000;
@@ -36,7 +36,22 @@ struct BlinkTestClient {
 }
 
 impl BlinkTestClient {
-    pub fn new(rpc: Arc<RpcClient>) -> Self {
+    pub async fn new(rpc: Arc<RpcClient>) -> Self {
+        // seed the test key with SOL
+        {
+            let test_key = test_key().pubkey();
+            let balance = rpc.get_balance(&test_key).await.unwrap();
+            rpc.request_airdrop(&test_key, spl_token_2022::ui_amount_to_amount(100000.0, 9))
+                .await
+                .unwrap();
+            loop {
+                let new_balance = rpc.get_balance(&test_key).await.unwrap();
+                if new_balance > balance {
+                    break;
+                }
+                tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+            }
+        }
         Self {
             rpc: rpc.clone(),
             server: TestServer::new(router::new(rpc)).unwrap(),
@@ -67,7 +82,7 @@ impl BlinkTestClient {
         let elgamal_sig = key.sign_message(&KeypairType::ElGamal.message_to_sign(user_ata));
         let ae_sig = key.sign_message(&KeypairType::Ae.message_to_sign(user_ata));
 
-        let deposit = DepositOrWithdraw {
+        let deposit = Deposit {
             authority: key.pubkey(),
             token_mint: mint.pubkey(),
             amount,
@@ -108,12 +123,17 @@ impl BlinkTestClient {
         let elgamal_sig = key.sign_message(&KeypairType::ElGamal.message_to_sign(user_ata));
         let ae_sig = key.sign_message(&KeypairType::Ae.message_to_sign(user_ata));
 
-        let withdraw = DepositOrWithdraw {
+        let equality_proof_keypair = Keypair::new();
+        let range_proof_keypair = Keypair::new();
+
+        let withdraw = Withdraw {
             authority: key.pubkey(),
             token_mint: mint.pubkey(),
             amount,
             elgamal_signature: elgamal_sig,
             ae_signature: ae_sig,
+            equality_proof_keypair: equality_proof_keypair.insecure_clone(),
+            range_proof_keypair: range_proof_keypair.insecure_clone(),
         };
         let res = self
             .server
@@ -122,9 +142,28 @@ impl BlinkTestClient {
             .bytes(serde_json::to_string(&withdraw).unwrap().into())
             .await;
         let res = String::from_utf8(res.as_bytes().to_vec()).unwrap();
-        println!("{res}");
         let response: ApiResponse = serde_json::from_str(&res).unwrap();
-        self.send_tx(key, response).await;
+        let txs = response.decode_transactions().unwrap();
+        // we cant use the send_tx helper here as we need to sign with equality + range proofs
+        for (idx, mut tx) in txs.into_iter().enumerate() {
+            if idx == 1 {
+                tx.sign(
+                    &vec![key, &equality_proof_keypair, &range_proof_keypair],
+                    self.rpc.get_latest_blockhash().await.unwrap(),
+                );
+            } else if idx == 2 {
+                tx.sign(&vec![key], self.rpc.get_latest_blockhash().await.unwrap());
+            } else if idx == 3 {
+                tx.sign(&vec![key], self.rpc.get_latest_blockhash().await.unwrap());
+            } else if idx == 4 {
+                tx.sign(
+                    &vec![key, &equality_proof_keypair, &range_proof_keypair],
+                    self.rpc.get_latest_blockhash().await.unwrap(),
+                );
+            }
+            println!("sending tx({idx})");
+            self.rpc.send_and_confirm_transaction(&tx).await.unwrap();
+        }
     }
     async fn create_confidential_mint(&mut self, key: &Keypair, mint: &Keypair) {
         let space = ExtensionType::try_calculate_account_len::<Mint>(&[
@@ -197,14 +236,20 @@ impl BlinkTestClient {
             tx.sign(&vec![&key], self.rpc.get_latest_blockhash().await.unwrap());
 
             let sig = self.rpc.send_and_confirm_transaction(&tx).await.unwrap();
-            println!("{:#?}", self.rpc.get_transaction_with_config(
-                &sig,
-                RpcTransactionConfig {
-                    encoding: Some(UiTransactionEncoding::JsonParsed),
-                    max_supported_transaction_version: Some(1),
-                    ..Default::default()
-                }
-            ).await.unwrap());
+            println!(
+                "{:#?}",
+                self.rpc
+                    .get_transaction_with_config(
+                        &sig,
+                        RpcTransactionConfig {
+                            encoding: Some(UiTransactionEncoding::JsonParsed),
+                            max_supported_transaction_version: Some(1),
+                            ..Default::default()
+                        }
+                    )
+                    .await
+                    .unwrap()
+            );
         }
     }
 }

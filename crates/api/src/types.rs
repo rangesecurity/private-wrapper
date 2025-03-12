@@ -3,7 +3,11 @@ use {
     anyhow::Context,
     base64::{prelude::BASE64_STANDARD, Engine},
     serde::{Deserialize, Serialize},
-    solana_sdk::{pubkey::Pubkey, signature::Signature, transaction::Transaction},
+    solana_sdk::{
+        pubkey::Pubkey,
+        signature::{Keypair, Signature},
+        transaction::Transaction,
+    },
 };
 
 /// JSON request used to initialize a confidential token account or apply a pending balance
@@ -30,7 +34,7 @@ pub struct InitializeOrApply {
 /// JSON request used to deposit from non-confidential balance to pending balance
 ///
 #[derive(Serialize, Deserialize)]
-pub struct DepositOrWithdraw {
+pub struct Deposit {
     /// The public key of the wallet which is depositing tokens
     #[serde(with = "serde_utils::pubkey_string")]
     pub authority: Pubkey,
@@ -49,6 +53,36 @@ pub struct DepositOrWithdraw {
     pub ae_signature: Signature,
     /// The amount of tokens to deposit or withdraw in lamports
     pub amount: u64,
+}
+
+/// JSON request used to deposit from non-confidential balance to pending balance
+///
+#[derive(Serialize, Deserialize)]
+pub struct Withdraw {
+    /// The public key of the wallet which is depositing tokens
+    #[serde(with = "serde_utils::pubkey_string")]
+    pub authority: Pubkey,
+    /// The confidential token mint
+    #[serde(with = "serde_utils::pubkey_string")]
+    pub token_mint: Pubkey,
+    /// The signed message of [b"ElGamalSecretKey", user_ata]
+    ///
+    /// This is used to derive the ElGamal keypair
+    #[serde(with = "serde_utils::signature_string")]
+    pub elgamal_signature: Signature,
+    /// The signed message of [b"AEKey", user_ata]
+    ///
+    /// This is used to derive the AE key
+    #[serde(with = "serde_utils::signature_string")]
+    pub ae_signature: Signature,
+    /// The amount of tokens to deposit or withdraw in lamports
+    pub amount: u64,
+    /// The keypair to be used for the equality proof
+    #[serde(with = "serde_utils::keypair_string")]
+    pub equality_proof_keypair: Keypair,
+    /// The keypair to be used for the range proof
+    #[serde(with = "serde_utils::keypair_string")]
+    pub range_proof_keypair: Keypair,
 }
 
 /// JSON response indicating an error message

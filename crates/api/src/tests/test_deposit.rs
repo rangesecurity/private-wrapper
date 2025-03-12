@@ -1,10 +1,6 @@
 use std::sync::Arc;
 
-use crate::{
-    router,
-    tests::BlinkTestClient,
-    types::{ApiResponse, DepositOrWithdraw, InitializeOrApply},
-};
+use crate::{router, tests::BlinkTestClient};
 use axum::body::{Body, Bytes};
 use axum_test::{TestResponse, TestServer};
 use base64::{prelude::BASE64_STANDARD, Engine};
@@ -29,7 +25,7 @@ async fn test_deposit() {
     let mint = Keypair::new();
     let rpc = Arc::new(RpcClient::new("http://localhost:8899".to_string()));
 
-    let mut test_client = BlinkTestClient::new(rpc);
+    let mut test_client = BlinkTestClient::new(rpc).await;
 
     test_client.create_confidential_mint(&key, &mint).await;
 
@@ -43,7 +39,8 @@ async fn test_deposit() {
             .get_token_account_balance(&get_user_ata(&key, &mint))
             .await
             .unwrap()
-            .amount.parse::<u64>()
+            .amount
+            .parse::<u64>()
             .unwrap(),
         1_000_000
     );

@@ -1,7 +1,7 @@
 use {
     crate::{
         router::AppState,
-        types::{ApiError, ApiResponse, DepositOrWithdraw, InitializeOrApply},
+        types::{ApiError, ApiResponse, InitializeOrApply},
     },
     axum::{extract::State, response::IntoResponse, Json},
     base64::{prelude::BASE64_STANDARD, Engine},

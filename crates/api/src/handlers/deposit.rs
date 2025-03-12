@@ -1,7 +1,7 @@
 use {
     crate::{
         router::AppState,
-        types::{ApiError, ApiResponse, DepositOrWithdraw},
+        types::{ApiError, ApiResponse, Deposit},
     },
     axum::{extract::State, response::IntoResponse, Json},
     base64::{prelude::BASE64_STANDARD, Engine},
@@ -28,7 +28,7 @@ use {
 /// * Insufficient token amount
 pub async fn deposit(
     State(state): State<Arc<AppState>>,
-    Json(payload): Json<DepositOrWithdraw>,
+    Json(payload): Json<Deposit>,
 ) -> impl IntoResponse {
     // derive the ATA for the authority + token_mint
     let user_ata = spl_associated_token_account::get_associated_token_address_with_program_id(
@@ -235,8 +235,9 @@ pub async fn deposit(
                 &[&payload.authority],
             )
             .unwrap(),
-            // can only fail if incorrect token program is provided
-            /*spl_token_2022::extension::confidential_transfer::instruction::apply_pending_balance(
+            // omitted for now due to combined deposit+apply error
+            /* can only fail if incorrect token program is provided
+            spl_token_2022::extension::confidential_transfer::instruction::apply_pending_balance(
                 &spl_token_2022::id(),
                 &user_ata,
                 pending_balance_credit_counter,

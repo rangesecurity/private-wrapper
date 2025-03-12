@@ -27,12 +27,9 @@ use super::{get_user_ata, MINT_AMOUNT};
 async fn test_initialize() {
     let key = test_key();
     let mint = Keypair::new();
-    let rpc = Arc::new(RpcClient::new_with_commitment(
-        "http://localhost:8899".to_string(),
-        CommitmentConfig::confirmed(),
-    ));
+    let rpc = Arc::new(RpcClient::new("http://localhost:8899".to_string()));
 
-    let mut test_client = BlinkTestClient::new(rpc);
+    let mut test_client = BlinkTestClient::new(rpc).await;
 
     test_client
         .rpc
