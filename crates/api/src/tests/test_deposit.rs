@@ -3,7 +3,7 @@ use std::sync::Arc;
 use crate::{
     router,
     tests::BlinkTestClient,
-    types::{ApiResponse, DepositOrWithdraw, Initialize},
+    types::{ApiResponse, DepositOrWithdraw, InitializeOrApply},
 };
 use axum::body::{Body, Bytes};
 use axum_test::{TestResponse, TestServer};
@@ -48,5 +48,6 @@ async fn test_deposit() {
         1_000_000
     );
 
-    test_client.test_deposit(&key, &mint, spl_token_2022::ui_amount_to_amount(1.0, 9)).await;
+    test_client.test_deposit(&key, &mint, 100).await;
+    test_client.test_apply(&key, &mint).await;
 }

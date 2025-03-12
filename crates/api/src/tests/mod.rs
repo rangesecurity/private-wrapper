@@ -10,7 +10,7 @@ use std::sync::Arc;
 
 use crate::{
     router,
-    types::{ApiResponse, DepositOrWithdraw, Initialize},
+    types::{ApiResponse, DepositOrWithdraw, InitializeOrApply},
 };
 use axum::body::{Body, Bytes};
 use axum_test::{TestResponse, TestServer};
@@ -47,7 +47,7 @@ impl BlinkTestClient {
         let elgamal_sig = key.sign_message(&KeypairType::ElGamal.message_to_sign(user_ata));
         let ae_sig = key.sign_message(&KeypairType::Ae.message_to_sign(user_ata));
 
-        let init = Initialize {
+        let init = InitializeOrApply {
             authority: key.pubkey(),
             token_mint: mint.pubkey(),
             elgamal_signature: elgamal_sig,
@@ -77,6 +77,26 @@ impl BlinkTestClient {
         let res = self
             .server
             .post("/confidential-balances/deposit")
+            .add_header("Content-Type", "application/json")
+            .bytes(serde_json::to_string(&deposit).unwrap().into())
+            .await;
+        let response: ApiResponse = serde_json::from_slice(res.as_bytes()).unwrap();
+        self.send_tx(key, response).await;
+    }
+    async fn test_apply(&mut self, key: &Keypair, mint: &Keypair) {
+        let user_ata = get_user_ata(key, mint);
+        let elgamal_sig = key.sign_message(&KeypairType::ElGamal.message_to_sign(user_ata));
+        let ae_sig = key.sign_message(&KeypairType::Ae.message_to_sign(user_ata));
+
+        let deposit = InitializeOrApply {
+            authority: key.pubkey(),
+            token_mint: mint.pubkey(),
+            elgamal_signature: elgamal_sig,
+            ae_signature: ae_sig,
+        };
+        let res = self
+            .server
+            .post("/confidential-balances/apply")
             .add_header("Content-Type", "application/json")
             .bytes(serde_json::to_string(&deposit).unwrap().into())
             .await;

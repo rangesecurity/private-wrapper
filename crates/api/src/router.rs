@@ -39,6 +39,7 @@ pub fn new(rpc: Arc<RpcClient>) -> Router {
             "/confidential-balances/transfer",
             post(|| async { "hello" }),
         )
+        .route("/confidential-balances/apply", post(handlers::apply))
         .with_state(Arc::new(AppState { rpc }))
         .layer(
             TraceLayer::new_for_http().on_response(

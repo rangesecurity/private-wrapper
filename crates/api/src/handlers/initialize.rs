@@ -1,7 +1,7 @@
 use {
     crate::{
         router::AppState,
-        types::{ApiError, ApiResponse, Initialize},
+        types::{ApiError, ApiResponse, InitializeOrApply},
     },
     axum::{extract::State, response::IntoResponse, Json},
     base64::{prelude::BASE64_STANDARD, Engine},
@@ -27,7 +27,7 @@ use {
 /// * Mint account does not support ConfidentialTransferMint
 pub async fn initialize(
     State(state): State<Arc<AppState>>,
-    Json(payload): Json<Initialize>,
+    Json(payload): Json<InitializeOrApply>,
 ) -> impl IntoResponse {
     // derive the ATA for the authority + token_mint
     let user_ata = spl_associated_token_account::get_associated_token_address_with_program_id(

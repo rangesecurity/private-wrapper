@@ -6,9 +6,9 @@ use {
     solana_sdk::{pubkey::Pubkey, signature::Signature, transaction::Transaction},
 };
 
-/// JSON request used to initialize a confidential token account
+/// JSON request used to initialize a confidential token account or apply a pending balance
 #[derive(Serialize, Deserialize)]
-pub struct Initialize {
+pub struct InitializeOrApply {
     /// The public key of the wallet which generated the signatures
     #[serde(with = "serde_utils::pubkey_string")]
     pub authority: Pubkey,
@@ -99,7 +99,7 @@ mod test {
         let expected_ae_signature =
             key.sign_message(&KeypairType::Ae.message_to_sign(key.pubkey()));
 
-        let init_msg: Initialize = serde_json::from_value(serde_json::json!({
+        let init_msg: InitializeOrApply = serde_json::from_value(serde_json::json!({
             "authority": key.pubkey().to_string(),
             "token_mint": mint.to_string(),
             "elgamal_signature": expected_elgamal_signature.to_string(),

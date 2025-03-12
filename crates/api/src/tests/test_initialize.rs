@@ -3,7 +3,7 @@ use std::sync::Arc;
 use crate::{
     router,
     tests::BlinkTestClient,
-    types::{ApiResponse, Initialize},
+    types::{ApiResponse, InitializeOrApply},
 };
 use axum::body::{Body, Bytes};
 use axum_test::{TestResponse, TestServer};

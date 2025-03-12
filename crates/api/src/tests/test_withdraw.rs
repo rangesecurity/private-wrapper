@@ -3,7 +3,7 @@ use std::sync::Arc;
 use crate::{
     router,
     tests::BlinkTestClient,
-    types::{ApiResponse, DepositOrWithdraw, Initialize},
+    types::{ApiResponse, DepositOrWithdraw, InitializeOrApply},
 };
 use axum::body::{Body, Bytes};
 use axum_test::{TestResponse, TestServer};
@@ -58,5 +58,6 @@ async fn test_withdraw() {
     );
 
     test_client.test_deposit(&key, &mint, 200).await;
+    test_client.test_apply(&key, &mint).await;
     test_client.test_withdraw(&key, &mint, 100).await;
 }
