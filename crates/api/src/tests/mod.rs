@@ -1,7 +1,10 @@
 use {
     crate::{
         router,
-        types::{ApiResponse, Deposit, InitializeOrApply, Transfer, Withdraw},
+        types::{
+            ApiBalancesResponse, ApiTransactionResponse, Balances, Deposit, InitializeOrApply,
+            Transfer, Withdraw,
+        },
     },
     axum_test::TestServer,
     common::{key_generator::KeypairType, test_helpers::test_key},
@@ -66,7 +69,7 @@ impl BlinkTestClient {
             .add_header("Content-Type", "application/json")
             .bytes(serde_json::to_string(&init).unwrap().into())
             .await;
-        let response: ApiResponse = serde_json::from_slice(res.as_bytes()).unwrap();
+        let response: ApiTransactionResponse = serde_json::from_slice(res.as_bytes()).unwrap();
         self.send_tx(key, response).await;
     }
     async fn test_deposit(&mut self, key: &Keypair, mint: &Keypair, amount: u64) {
@@ -83,7 +86,7 @@ impl BlinkTestClient {
             .add_header("Content-Type", "application/json")
             .bytes(serde_json::to_string(&deposit).unwrap().into())
             .await;
-        let response: ApiResponse = serde_json::from_slice(res.as_bytes()).unwrap();
+        let response: ApiTransactionResponse = serde_json::from_slice(res.as_bytes()).unwrap();
         self.send_tx(key, response).await;
     }
     async fn test_apply(&mut self, key: &Keypair, mint: &Keypair) {
@@ -104,7 +107,7 @@ impl BlinkTestClient {
             .add_header("Content-Type", "application/json")
             .bytes(serde_json::to_string(&deposit).unwrap().into())
             .await;
-        let response: ApiResponse = serde_json::from_slice(res.as_bytes()).unwrap();
+        let response: ApiTransactionResponse = serde_json::from_slice(res.as_bytes()).unwrap();
         self.send_tx(key, response).await;
     }
     async fn test_withdraw(&mut self, key: &Keypair, mint: &Keypair, amount: u64) {
@@ -132,7 +135,7 @@ impl BlinkTestClient {
             .bytes(serde_json::to_string(&withdraw).unwrap().into())
             .await;
         let res = String::from_utf8(res.as_bytes().to_vec()).unwrap();
-        let response: ApiResponse = serde_json::from_str(&res).unwrap();
+        let response: ApiTransactionResponse = serde_json::from_str(&res).unwrap();
         let txs = response.decode_transactions().unwrap();
         // we cant use the send_tx helper here as we need to sign with equality + range proofs
         for (idx, mut tx) in txs.into_iter().enumerate() {
@@ -186,7 +189,7 @@ impl BlinkTestClient {
             .bytes(serde_json::to_string(&withdraw).unwrap().into())
             .await;
         let res = String::from_utf8(res.as_bytes().to_vec()).unwrap();
-        let response: ApiResponse = serde_json::from_str(&res).unwrap();
+        let response: ApiTransactionResponse = serde_json::from_str(&res).unwrap();
         let txs = response.decode_transactions().unwrap();
         // we cant use the send_tx helper here as we need to sign with equality + range proofs
         for (idx, mut tx) in txs.into_iter().enumerate() {
@@ -205,6 +208,25 @@ impl BlinkTestClient {
             }
             self.rpc.send_and_confirm_transaction(&tx).await.unwrap();
         }
+    }
+    async fn get_balances(&mut self, key: &Keypair, mint: &Keypair) -> ApiBalancesResponse {
+        let user_ata = get_user_ata(key, mint);
+        let elgamal_sig = key.sign_message(&KeypairType::ElGamal.message_to_sign(user_ata));
+        let ae_sig = key.sign_message(&KeypairType::Ae.message_to_sign(user_ata));
+
+        let balances = Balances {
+            authority: key.pubkey(),
+            token_mint: mint.pubkey(),
+            elgamal_signature: elgamal_sig,
+            ae_signature: ae_sig,
+        };
+        let res = self
+            .server
+            .post("/confidential-balances/balances")
+            .add_header("Content-Type", "application/json")
+            .bytes(serde_json::to_string(&balances).unwrap().into())
+            .await;
+        serde_json::from_slice(res.as_bytes()).unwrap()
     }
     async fn create_confidential_mint(&mut self, key: &Keypair, mint: &Keypair) {
         println!("creating confidential mint");
@@ -272,7 +294,7 @@ impl BlinkTestClient {
         tx.sign(&vec![key], self.rpc.get_latest_blockhash().await.unwrap());
         self.rpc.send_and_confirm_transaction(&tx).await.unwrap();
     }
-    async fn send_tx(&mut self, key: &Keypair, res: ApiResponse) {
+    async fn send_tx(&mut self, key: &Keypair, res: ApiTransactionResponse) {
         let transactions = res.decode_transactions().unwrap();
         for mut tx in transactions {
             tx.sign(&vec![&key], self.rpc.get_latest_blockhash().await.unwrap());

@@ -106,6 +106,27 @@ pub struct Transfer {
     pub amount: u64,
 }
 
+/// JSON request used to display account balances
+#[derive(Serialize, Deserialize)]
+pub struct Balances {
+    /// The public key of the wallet which is depositing tokens
+    #[serde(with = "serde_utils::pubkey_string")]
+    pub authority: Pubkey,
+    /// The confidential token mint
+    #[serde(with = "serde_utils::pubkey_string")]
+    pub token_mint: Pubkey,
+    /// The signed message of [b"ElGamalSecretKey", user_ata]
+    ///
+    /// This is used to derive the ElGamal keypair
+    #[serde(with = "serde_utils::signature_string")]
+    pub elgamal_signature: Signature,
+    /// The signed message of [b"AEKey", user_ata]
+    ///
+    /// This is used to derive the AE key
+    #[serde(with = "serde_utils::signature_string")]
+    pub ae_signature: Signature,
+}
+
 /// JSON response indicating an error message
 #[derive(Serialize, Deserialize)]
 pub struct ApiError {
@@ -114,14 +135,25 @@ pub struct ApiError {
 
 /// JSON response containing one or more transactions
 #[derive(Serialize, Deserialize)]
-pub struct ApiResponse {
+pub struct ApiTransactionResponse {
     /// Transactions returned by the confidential blink api
     ///
     /// If multiple transactions are returned, they must be executed in sequence
     pub transactions: Vec<String>,
 }
 
-impl ApiResponse {
+/// JSON response containing account balances
+#[derive(Serialize, Deserialize)]
+pub struct ApiBalancesResponse {
+    /// The amount of tokens pending application to the available confidential balance
+    pub pending_balance: f64,
+    /// The amount of tokens available as confidential balance
+    pub available_balnace: f64,
+    // The amount of non confidential tokens
+    pub non_confidential_balance: f64,
+}
+
+impl ApiTransactionResponse {
     /// Returns a vec of decoded transactions, consuming the response
     pub fn decode_transactions(self) -> anyhow::Result<Vec<Transaction>> {
         let mut transactions = Vec::with_capacity(self.transactions.len());

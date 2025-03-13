@@ -1,7 +1,7 @@
 use {
     crate::{
         router::AppState,
-        types::{ApiError, ApiResponse, Deposit},
+        types::{ApiError, ApiTransactionResponse, Deposit},
     },
     axum::{extract::State, response::IntoResponse, Json},
     base64::{prelude::BASE64_STANDARD, Engine},
@@ -135,7 +135,7 @@ pub async fn deposit(
     };
     (
         StatusCode::OK,
-        Json(ApiResponse {
+        Json(ApiTransactionResponse {
             transactions: vec![BASE64_STANDARD.encode(tx)],
         }),
     )

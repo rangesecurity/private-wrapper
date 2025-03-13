@@ -32,4 +32,10 @@ async fn test_deposit() {
 
     test_client.test_deposit(&key, &mint, 100).await;
     test_client.test_apply(&key, &mint).await;
+    test_client.test_deposit(&key, &mint, 10).await;
+
+    let balances = test_client.get_balances(&key, &mint).await;
+    assert_eq!(balances.pending_balance, 0.00001);
+    assert_eq!(balances.available_balnace, 0.0001);
+    assert_eq!(balances.non_confidential_balance, 0.99989);
 }

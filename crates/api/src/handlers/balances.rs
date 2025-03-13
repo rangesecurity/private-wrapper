@@ -1,29 +1,25 @@
 use {
     crate::{
         router::AppState,
-        types::{ApiError, ApiTransactionResponse, InitializeOrApply},
+        types::{ApiBalancesResponse, ApiError, Balances},
     },
     axum::{extract::State, response::IntoResponse, Json},
-    base64::{prelude::BASE64_STANDARD, Engine},
-    common::{
-        accounts::token_account_already_configured,
-        key_generator::{derive_ae_key, derive_elgamal_key, KeypairType},
-    },
+    common::key_generator::{derive_ae_key, derive_elgamal_key, KeypairType},
     http::StatusCode,
-    solana_sdk::transaction::Transaction,
-    spl_token_2022::extension::{
-        confidential_transfer::{
-            account_info::ApplyPendingBalanceAccountInfo, ConfidentialTransferAccount,
+    spl_token_2022::{
+        extension::{
+            confidential_transfer::{account_info::combine_balances, ConfidentialTransferAccount},
+            BaseStateWithExtensions, StateWithExtensions,
         },
-        BaseStateWithExtensions, StateWithExtensions,
+        solana_zk_sdk::encryption::{auth_encryption::AeCiphertext, elgamal::ElGamalCiphertext},
     },
     std::sync::Arc,
 };
 
 /// Handler which is used to apply pending balance into confidential balance
-pub async fn apply(
+pub async fn balances(
     State(state): State<Arc<AppState>>,
-    Json(payload): Json<InitializeOrApply>,
+    Json(payload): Json<Balances>,
 ) -> impl IntoResponse {
     // derive the ATA for the authority + token_mint
     let user_ata = spl_associated_token_account::get_associated_token_address_with_program_id(
@@ -124,28 +120,20 @@ pub async fn apply(
             .into_response();
     };
 
-    // optimization note: provide an unpack token account
-    // ensure token account is configured for confidential transfers
-    if !token_account_already_configured(&token_account) {
-        return (
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                msg: "token account is not configured for confidential transfers".to_string(),
-            }),
-        )
-            .into_response();
-    }
-
-    // ensure the token mint is valid for confidential transfers
-    if !common::accounts::is_valid_mint(&token_mint) {
-        return (
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                msg: "token mint does not support confidential transfers".to_string(),
-            }),
-        )
-            .into_response();
-    }
+    // get the token mint decimals
+    let decimals =
+        match StateWithExtensions::<spl_token_2022::state::Mint>::unpack(&token_mint.data) {
+            Ok(mint) => mint.base.decimals,
+            Err(err) => {
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(ApiError {
+                        msg: format!("failed to unpack token mint {err:#?}"),
+                    }),
+                )
+                    .into_response()
+            }
+        };
 
     // unpack token account
     let token_account =
@@ -178,62 +166,93 @@ pub async fn apply(
         }
     };
 
-    // get the pending balance data
-    let apply_pending_balance_info =
-        ApplyPendingBalanceAccountInfo::new(confidential_transfer_account);
-
-    // get the current pending balance counter
-    let pending_balance_credit_counter =
-        apply_pending_balance_info.pending_balance_credit_counter();
-
-    // get new available balance
-    let new_decryptable_available_balance = match apply_pending_balance_info
-        .new_decryptable_available_balance(&elgamal_key.secret(), &ae_key)
-    {
-        Ok(new_balance) => new_balance,
-        Err(err) => {
-            return (
-                StatusCode::BAD_REQUEST,
-                Json(ApiError {
-                    msg: format!("failed to encrypt new available balance {err:#?}"),
-                }),
-            )
-                .into_response()
-        }
+    let Ok(pending_balance_lo) =
+        TryInto::<ElGamalCiphertext>::try_into(confidential_transfer_account.pending_balance_lo)
+    else {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ApiError {
+                msg: "failed to parse pending_balance_hi".to_string(),
+            }),
+        )
+            .into_response();
+    };
+    let Ok(pending_balance_hi) =
+        TryInto::<ElGamalCiphertext>::try_into(confidential_transfer_account.pending_balance_hi)
+    else {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ApiError {
+                msg: "failed to parse pending_balance_lo".to_string(),
+            }),
+        )
+            .into_response();
     };
 
-    let tx = Transaction::new_with_payer(
-        &[
-            // can only fail if incorrect token program is provided
-            spl_token_2022::extension::confidential_transfer::instruction::apply_pending_balance(
-                &spl_token_2022::id(),
-                &user_ata,
-                pending_balance_credit_counter,
-                &new_decryptable_available_balance.into(),
-                &payload.authority,
-                &[&payload.authority],
-            )
-            .unwrap(),
-        ],
-        Some(&payload.authority),
-    );
-
-    let tx = match bincode::serialize(&tx) {
-        Ok(tx) => tx,
-        Err(err) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(ApiError {
-                    msg: format!("failed to serialize transaction {err:#?}"),
-                }),
-            )
-                .into_response()
-        }
+    let Some(pending_balance_lo) = elgamal_key.secret().decrypt_u32(&pending_balance_lo) else {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ApiError {
+                msg: "failed to decrypt pending_balance_lo".to_string(),
+            }),
+        )
+            .into_response();
     };
+
+    let Some(pending_balance_hi) = elgamal_key.secret().decrypt_u32(&pending_balance_hi) else {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ApiError {
+                msg: "failed to decrypt pending_balance_hi".to_string(),
+            }),
+        )
+            .into_response();
+    };
+
+    let Some(pending_balance) = combine_balances(pending_balance_lo, pending_balance_hi) else {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ApiError {
+                msg: "failed to combined pending_balance_lo and pending_balance_hi".to_string(),
+            }),
+        )
+            .into_response();
+    };
+
+    let Ok(decryptable_available_balance) = TryInto::<AeCiphertext>::try_into(
+        confidential_transfer_account.decryptable_available_balance,
+    ) else {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ApiError {
+                msg: "failed to parse decryptable_available_balance".to_string(),
+            }),
+        )
+            .into_response();
+    };
+
+    let Some(decrypted_available_balance) = ae_key.decrypt(&decryptable_available_balance) else {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ApiError {
+                msg: "failed to decrypt decryptable_available_balance".to_string(),
+            }),
+        )
+            .into_response();
+    };
+
     (
         StatusCode::OK,
-        Json(ApiTransactionResponse {
-            transactions: vec![BASE64_STANDARD.encode(tx)],
+        Json(ApiBalancesResponse {
+            pending_balance: spl_token_2022::amount_to_ui_amount(pending_balance, decimals),
+            available_balnace: spl_token_2022::amount_to_ui_amount(
+                decrypted_available_balance,
+                decimals,
+            ),
+            non_confidential_balance: spl_token_2022::amount_to_ui_amount(
+                token_account.base.amount,
+                decimals,
+            ),
         }),
     )
         .into_response()

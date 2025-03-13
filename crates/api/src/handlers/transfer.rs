@@ -1,7 +1,7 @@
 use {
     crate::{
         router::AppState,
-        types::{ApiError, ApiResponse, Transfer},
+        types::{ApiError, ApiTransactionResponse, Transfer},
     },
     axum::{extract::State, response::IntoResponse, Json},
     base64::{prelude::BASE64_STANDARD, Engine},
@@ -571,5 +571,9 @@ pub async fn transfer(
         )
             .into_response();
     }
-    (StatusCode::OK, Json(ApiResponse { transactions: txs })).into_response()
+    (
+        StatusCode::OK,
+        Json(ApiTransactionResponse { transactions: txs }),
+    )
+        .into_response()
 }

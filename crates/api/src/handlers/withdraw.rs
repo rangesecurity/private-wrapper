@@ -1,7 +1,7 @@
 use {
     crate::{
         router::AppState,
-        types::{ApiError, ApiResponse, Withdraw},
+        types::{ApiError, ApiTransactionResponse, Withdraw},
     },
     axum::{extract::State, response::IntoResponse, Json},
     base64::{prelude::BASE64_STANDARD, Engine},
@@ -381,5 +381,9 @@ pub async fn withdraw(
         )
             .into_response();
     }
-    (StatusCode::OK, Json(ApiResponse { transactions: txs })).into_response()
+    (
+        StatusCode::OK,
+        Json(ApiTransactionResponse { transactions: txs }),
+    )
+        .into_response()
 }
