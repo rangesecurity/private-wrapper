@@ -24,6 +24,5 @@ workspace =  true
 [dependencies.spl-token-confidential-transfer-proof-generation]
 workspace = true
 
-
 [dev-dependencies.spl-pod]
 version = "0.5"

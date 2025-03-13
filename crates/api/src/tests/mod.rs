@@ -10,12 +10,14 @@ use {
     common::{key_generator::KeypairType, test_helpers::test_key},
     solana_client::{nonblocking::rpc_client::RpcClient, rpc_config::RpcTransactionConfig},
     solana_sdk::{
-        pubkey::Pubkey, signature::Keypair, signer::Signer, system_instruction,
-        transaction::Transaction,
+        program_pack::Pack, pubkey::Pubkey, signature::Keypair, signer::Signer, system_instruction, transaction::Transaction
     },
     solana_transaction_status_client_types::UiTransactionEncoding,
     spl_token_2022::{extension::ExtensionType, state::Mint},
     spl_token_client::token::ExtensionInitializationParams,
+    spl_token_wrap::{
+        get_wrapped_mint_address, get_wrapped_mint_backpointer_address, state::Backpointer,
+    },
     std::sync::Arc,
 };
 
@@ -23,6 +25,7 @@ pub mod test_deposit;
 pub mod test_initialize;
 pub mod test_transfer;
 pub mod test_withdraw;
+pub mod test_private_wrapper;
 
 struct BlinkTestClient {
     rpc: Arc<RpcClient>,
@@ -278,6 +281,90 @@ impl BlinkTestClient {
 
         self.rpc.send_and_confirm_transaction(&tx).await.unwrap();
     }
+    async fn create_mint(
+        &mut self,
+        key: &Keypair,
+        mint: &Keypair
+    ) {
+        let create_mint_ix = system_instruction::create_account(
+            &key.pubkey(),
+            &mint.pubkey(),
+            self.rpc.get_minimum_balance_for_rent_exemption(spl_token_2022::state::Mint::LEN).await.unwrap(),
+            spl_token_2022::state::Mint::LEN as u64,
+            &spl_token_2022::id(),
+        );
+        let init_mint_ix = spl_token_2022::instruction::initialize_mint2(
+            &spl_token_2022::id(),
+            &mint.pubkey(),
+            &key.pubkey(),
+            None,
+            6,
+        ).unwrap();
+        let mut tx = Transaction::new_with_payer(
+            &[
+                create_mint_ix,
+                init_mint_ix,
+            ],
+            Some(&key.pubkey(),)
+        );
+        tx.sign(&vec![key, mint], self.rpc.get_latest_blockhash().await.unwrap());
+        self.rpc.send_and_confirm_transaction(&tx).await.unwrap();
+
+    }
+    // returns the address of the wrapped mint
+    async fn create_confidential_wrapped_mint(
+        &mut self,
+        key: &Keypair,
+        unwrapped_mint: &Keypair,
+    ) -> Pubkey {
+        println!("creating wrapped confidential mint");
+
+        let wrapped_mint_address =
+            get_wrapped_mint_address(&unwrapped_mint.pubkey(), &spl_token_2022::id());
+
+        let backpoint_rent = self
+            .rpc
+            .get_minimum_balance_for_rent_exemption(std::mem::size_of::<Backpointer>())
+            .await
+            .unwrap();
+        let mint_size =
+            ExtensionType::try_calculate_account_len::<spl_token_2022::state::Mint>(&[ExtensionType::ConfidentialTransferMint])
+                .unwrap();
+        let mint_rent = self
+            .rpc
+            .get_minimum_balance_for_rent_exemption(mint_size)
+            .await
+            .unwrap();
+
+        let ix = spl_token_wrap::instruction::create_confidential_mint(
+            &spl_token_wrap::ID,
+            &wrapped_mint_address,
+            &get_wrapped_mint_backpointer_address(&wrapped_mint_address),
+            &unwrapped_mint.pubkey(),
+            &spl_token_2022::id(),
+            true,
+            true,
+            [0u8; 32],
+            [0u8; 32],
+        );
+        let mut ixs = vec![];
+        ixs.append(&mut system_instruction::transfer_many(
+            &key.pubkey(),
+            &[
+                (
+                    get_wrapped_mint_backpointer_address(&wrapped_mint_address),
+                    backpoint_rent,
+                ),
+                (wrapped_mint_address, mint_rent),
+            ],
+        ));
+        ixs.push(ix);
+        let mut tx = Transaction::new_with_payer(&ixs, Some(&key.pubkey()));
+        tx.sign(&vec![key], self.rpc.get_latest_blockhash().await.unwrap());
+
+        self.rpc.send_and_confirm_transaction(&tx).await.unwrap();
+        wrapped_mint_address
+    }
     async fn mint_tokens(&mut self, key: &Keypair, mint: &Keypair, amount: u64) {
         let mut tx = Transaction::new_with_payer(
             &[spl_token_2022::instruction::mint_to(
@@ -291,6 +378,21 @@ impl BlinkTestClient {
             .unwrap()],
             Some(&key.pubkey()),
         );
+        tx.sign(&vec![key], self.rpc.get_latest_blockhash().await.unwrap());
+        self.rpc.send_and_confirm_transaction(&tx).await.unwrap();
+    }
+    async fn create_token_account(
+        &mut self,
+        key: &Keypair,
+        mint: &Keypair
+    ) {
+        let ix = spl_associated_token_account::instruction::create_associated_token_account_idempotent(
+            &key.pubkey(),
+            &key.pubkey(),
+            &mint.pubkey(),
+            &spl_token_2022::id()
+        );
+        let mut tx = Transaction::new_with_payer(&[ix], Some(&key.pubkey()));
         tx.sign(&vec![key], self.rpc.get_latest_blockhash().await.unwrap());
         self.rpc.send_and_confirm_transaction(&tx).await.unwrap();
     }

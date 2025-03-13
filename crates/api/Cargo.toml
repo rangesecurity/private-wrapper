@@ -37,6 +37,8 @@ workspace = true
 workspace =  true
 [dependencies.spl-token-confidential-transfer-proof-generation]
 workspace = true
+[dependencies.spl-token-wrap]
+workspace = true
 
 [dependencies.common]
 path = "../common"

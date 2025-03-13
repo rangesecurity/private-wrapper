@@ -7,8 +7,12 @@ solana-zk-sdk = "2.2.1"
 solana-sdk = "2.2.1"
 anyhow = "1"
 serde = {version = "1", features = ["derive"]}
-spl-token-2022 = "7.0.0"
+spl-token-2022 = { git = "https://github.com/solana-program/token-2022", rev = "00e0f4723c2606c0facbb4921e1b2e2e030d1fa6", features = ["no-entrypoint"] }
+
 spl-associated-token-account = {version = "6.0.0", features = ["no-entrypoint"]}
-spl-token-confidential-transfer-proof-extraction = "0.2.1"
-spl-token-confidential-transfer-proof-generation = "0.3.0"
+#spl-token-confidential-transfer-proof-extraction = "0.2.1"
+#spl-token-confidential-transfer-proof-generation = "0.3.0"
+spl-token-confidential-transfer-proof-extraction = { git = "https://github.com/solana-program/token-2022", rev = "00e0f4723c2606c0facbb4921e1b2e2e030d1fa6" }
+spl-token-confidential-transfer-proof-generation = { git = "https://github.com/solana-program/token-2022", rev = "00e0f4723c2606c0facbb4921e1b2e2e030d1fa6" }
 bytemuck = "1"
+spl-token-wrap = {git = "https://github.com/rangesecurity/token-wrap", rev = "b98d552deebfeb0af64bf778ed6137e0c6f280a9"}
