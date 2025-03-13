@@ -1,35 +1,25 @@
-use solana_client::{nonblocking::rpc_client::RpcClient, rpc_config::RpcTransactionConfig};
-use solana_sdk::{
-    pubkey::Pubkey, signature::Keypair, signer::Signer, system_instruction,
-    transaction::Transaction,
+use {
+    crate::{
+        router,
+        types::{ApiResponse, Deposit, InitializeOrApply, Transfer, Withdraw},
+    },
+    axum_test::TestServer,
+    common::{key_generator::KeypairType, test_helpers::test_key},
+    solana_client::{nonblocking::rpc_client::RpcClient, rpc_config::RpcTransactionConfig},
+    solana_sdk::{
+        pubkey::Pubkey, signature::Keypair, signer::Signer, system_instruction,
+        transaction::Transaction,
+    },
+    solana_transaction_status_client_types::UiTransactionEncoding,
+    spl_token_2022::{extension::ExtensionType, state::Mint},
+    spl_token_client::token::ExtensionInitializationParams,
+    std::sync::Arc,
 };
-use solana_transaction_status_client_types::UiTransactionEncoding;
-use spl_token_2022::{extension::ExtensionType, state::Mint};
-use spl_token_client::token::ExtensionInitializationParams;
-use std::sync::Arc;
-
-use crate::{
-    router,
-    types::{ApiResponse, Deposit, InitializeOrApply, Transfer, Withdraw},
-};
-use axum::body::{Body, Bytes};
-use axum_test::{TestResponse, TestServer};
-use base64::{prelude::BASE64_STANDARD, Engine};
-use common::{
-    key_generator::{derive_ae_key, derive_elgamal_key, KeypairType},
-    test_helpers::test_key,
-};
-use http::Request;
-use http_body_util::BodyExt;
-use tower::ServiceExt;
 
 pub mod test_deposit;
 pub mod test_initialize;
 pub mod test_transfer;
 pub mod test_withdraw;
-
-/// 100.0 with 9 decimals
-pub const MINT_AMOUNT: u64 = 100000000000;
 
 struct BlinkTestClient {
     rpc: Arc<RpcClient>,
@@ -81,16 +71,11 @@ impl BlinkTestClient {
     }
     async fn test_deposit(&mut self, key: &Keypair, mint: &Keypair, amount: u64) {
         println!("depositing to pending balance");
-        let user_ata = get_user_ata(key, mint);
-        let elgamal_sig = key.sign_message(&KeypairType::ElGamal.message_to_sign(user_ata));
-        let ae_sig = key.sign_message(&KeypairType::Ae.message_to_sign(user_ata));
 
         let deposit = Deposit {
             authority: key.pubkey(),
             token_mint: mint.pubkey(),
             amount,
-            elgamal_signature: elgamal_sig,
-            ae_signature: ae_sig,
         };
         let res = self
             .server
@@ -182,11 +167,12 @@ impl BlinkTestClient {
             authority: key.pubkey(),
             token_mint: mint.pubkey(),
             amount,
-            receiving_token_account: spl_associated_token_account::get_associated_token_address_with_program_id(
-                &receipient.pubkey(),
-                &mint.pubkey(),
-                &spl_token_2022::id(),
-            ),
+            receiving_token_account:
+                spl_associated_token_account::get_associated_token_address_with_program_id(
+                    &receipient.pubkey(),
+                    &mint.pubkey(),
+                    &spl_token_2022::id(),
+                ),
             elgamal_signature: elgamal_sig,
             ae_signature: ae_sig,
             equality_proof_keypair: equality_proof_keypair.insecure_clone(),
@@ -206,7 +192,12 @@ impl BlinkTestClient {
         for (idx, mut tx) in txs.into_iter().enumerate() {
             if idx == 0 {
                 tx.sign(
-                    &vec![key, &equality_proof_keypair, &range_proof_keypair, &ciphertext_proof_keypair],
+                    &vec![
+                        key,
+                        &equality_proof_keypair,
+                        &range_proof_keypair,
+                        &ciphertext_proof_keypair,
+                    ],
                     self.rpc.get_latest_blockhash().await.unwrap(),
                 );
             } else {

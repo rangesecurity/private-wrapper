@@ -1,23 +1,8 @@
-use std::sync::Arc;
-
-use crate::{router, tests::BlinkTestClient};
-use axum::body::{Body, Bytes};
-use axum_test::{TestResponse, TestServer};
-use base64::{prelude::BASE64_STANDARD, Engine};
-use common::{
-    key_generator::{derive_ae_key, derive_elgamal_key, KeypairType},
-    test_helpers::test_key,
+use {
+    super::get_user_ata, crate::tests::BlinkTestClient, common::test_helpers::test_key,
+    solana_client::nonblocking::rpc_client::RpcClient, solana_sdk::signature::Keypair,
+    std::sync::Arc,
 };
-use http::Request;
-use http_body_util::BodyExt;
-use solana_client::nonblocking::rpc_client::RpcClient;
-use solana_sdk::{
-    commitment_config::CommitmentConfig, signature::Keypair, signer::Signer,
-    transaction::Transaction,
-};
-use tower::ServiceExt;
-
-use super::{get_user_ata, MINT_AMOUNT};
 
 #[tokio::test(flavor = "multi_thread")]
 async fn test_deposit() {

@@ -1,7 +1,7 @@
 use {
     crate::{
         router::AppState,
-        types::{ApiError, ApiResponse, Transfer, Withdraw},
+        types::{ApiError, ApiResponse, Transfer},
     },
     axum::{extract::State, response::IntoResponse, Json},
     base64::{prelude::BASE64_STANDARD, Engine},
@@ -11,13 +11,11 @@ use {
         proofs::get_zk_proof_context_state_account_creation_instructions,
     },
     http::StatusCode,
-    solana_sdk::{signature::Keypair, signer::Signer, transaction::Transaction},
+    solana_sdk::{signer::Signer, transaction::Transaction},
     spl_token_2022::{
         extension::{
             confidential_transfer::{
-                account_info::{
-                    ApplyPendingBalanceAccountInfo, TransferAccountInfo, WithdrawAccountInfo,
-                },
+                account_info::TransferAccountInfo,
                 instruction::{
                     BatchedGroupedCiphertext3HandlesValidityProofContext, BatchedRangeProofContext,
                     CiphertextCommitmentEqualityProofContext, ProofContextState,
@@ -32,12 +30,11 @@ use {
         },
     },
     spl_token_confidential_transfer_proof_extraction::instruction::ProofLocation,
-    spl_token_confidential_transfer_proof_generation::{
-        transfer::TransferProofData, withdraw::WithdrawProofData,
-    },
+    spl_token_confidential_transfer_proof_generation::transfer::TransferProofData,
     std::sync::Arc,
 };
 
+/// Handler which is used to transfer confidential balance
 pub async fn transfer(
     State(state): State<Arc<AppState>>,
     Json(payload): Json<Transfer>,
@@ -277,23 +274,6 @@ pub async fn transfer(
                 .into_response()
         }
     };
-    let auditor_pubkey = if let Some(auditor_pubkey) =
-        Option::<PodElGamalPubkey>::from(mint_extension.auditor_elgamal_pubkey)
-    {
-        let Ok(auditor_pubkey) = TryInto::<ElGamalPubkey>::try_into(auditor_pubkey) else {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(ApiError {
-                    msg: "failed to parse auditor pubkey".to_string(),
-                }),
-            )
-                .into_response();
-        };
-        Some(auditor_pubkey)
-    } else {
-        None
-    };
-
     let Ok(destination_pubkey) =
         TryInto::<ElGamalPubkey>::try_into(receiving_confidential_transfer_account.elgamal_pubkey)
     else {

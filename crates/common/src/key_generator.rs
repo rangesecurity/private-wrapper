@@ -36,10 +36,7 @@ pub fn derive_ae_key(signature: Signature) -> Result<AeKey> {
 
 #[cfg(test)]
 mod test {
-    use crate::test_helpers::test_key;
-    use solana_sdk::{signature::Keypair, signer::Signer};
-
-    use super::*;
+    use {super::*, crate::test_helpers::test_key, solana_sdk::signer::Signer};
 
     #[test]
     fn test_derive_elgamal_keypair() {

@@ -41,16 +41,6 @@ pub struct Deposit {
     /// The confidential token mint
     #[serde(with = "serde_utils::pubkey_string")]
     pub token_mint: Pubkey,
-    /// The signed message of [b"ElGamalSecretKey", user_ata]
-    ///
-    /// This is used to derive the ElGamal keypair
-    #[serde(with = "serde_utils::signature_string")]
-    pub elgamal_signature: Signature,
-    /// The signed message of [b"AEKey", user_ata]
-    ///
-    /// This is used to derive the AE key
-    #[serde(with = "serde_utils::signature_string")]
-    pub ae_signature: Signature,
     /// The amount of tokens to deposit or withdraw in lamports
     pub amount: u64,
 }
@@ -151,9 +141,11 @@ impl ApiResponse {
 
 #[cfg(test)]
 mod test {
-    use super::*;
-    use common::{key_generator::KeypairType, test_helpers::test_key};
-    use solana_sdk::signer::Signer;
+    use {
+        super::*,
+        common::{key_generator::KeypairType, test_helpers::test_key},
+        solana_sdk::signer::Signer,
+    };
 
     #[test]
     fn test_initialize_serialization() {

@@ -20,12 +20,7 @@ use {
     std::sync::Arc,
 };
 
-/// Handler which is used to construct the token account initialization transaction
-///
-/// # Errors
-///
-/// * Token acount does not exist and/or not configured for confidential transfers
-/// * Insufficient token amount
+/// Handler which is used to apply pending balance into confidential balance
 pub async fn apply(
     State(state): State<Arc<AppState>>,
     Json(payload): Json<InitializeOrApply>,
@@ -140,21 +135,6 @@ pub async fn apply(
         )
             .into_response();
     }
-
-    // get the token mint decimals
-    let decimals =
-        match StateWithExtensions::<spl_token_2022::state::Mint>::unpack(&token_mint.data) {
-            Ok(mint) => mint.base.decimals,
-            Err(err) => {
-                return (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    Json(ApiError {
-                        msg: format!("failed to unpack token mint {err:#?}"),
-                    }),
-                )
-                    .into_response()
-            }
-        };
 
     // ensure the token mint is valid for confidential transfers
     if !common::accounts::is_valid_mint(&token_mint) {

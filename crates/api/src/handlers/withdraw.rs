@@ -11,11 +11,11 @@ use {
         proofs::get_zk_proof_context_state_account_creation_instructions,
     },
     http::StatusCode,
-    solana_sdk::{signature::Keypair, signer::Signer, transaction::Transaction},
+    solana_sdk::{signer::Signer, transaction::Transaction},
     spl_token_2022::{
         extension::{
             confidential_transfer::{
-                account_info::{ApplyPendingBalanceAccountInfo, WithdrawAccountInfo},
+                account_info::WithdrawAccountInfo,
                 instruction::{
                     BatchedRangeProofContext, CiphertextCommitmentEqualityProofContext,
                     ProofContextState,
@@ -34,11 +34,6 @@ use {
 };
 
 /// Handler which is used to withdraw tokens from the confidential balance to the public balance
-///
-/// # Errors
-///
-/// * Token acount does not exist and/or not configured for confidential transfers
-/// * Insufficient token amount
 pub async fn withdraw(
     State(state): State<Arc<AppState>>,
     Json(payload): Json<Withdraw>,

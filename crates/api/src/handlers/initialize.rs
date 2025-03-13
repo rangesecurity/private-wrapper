@@ -19,12 +19,7 @@ use {
     std::sync::Arc,
 };
 
-/// Handler which is used to construct the deposit + aply balance instructions
-///
-/// # Errors
-///
-/// * Token account is initialized with extension already
-/// * Mint account does not support ConfidentialTransferMint
+/// Handler which is used to initialize the confidential token account
 pub async fn initialize(
     State(state): State<Arc<AppState>>,
     Json(payload): Json<InitializeOrApply>,

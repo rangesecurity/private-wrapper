@@ -53,21 +53,22 @@ pub fn token_account_already_configured(account: &Account) -> bool {
 
 #[cfg(test)]
 mod test {
-    use bytemuck::Zeroable;
-    use solana_sdk::{program_pack::Pack, pubkey::Pubkey};
-    use solana_zk_sdk::encryption::{auth_encryption::AeKey, elgamal::ElGamalKeypair};
-    use spl_pod::{optional_keys::OptionalNonZeroPubkey, primitives::PodBool};
-    use spl_token_2022::{
-        extension::{
-            confidential_transfer::{
-                ConfidentialTransferAccount, ConfidentialTransferMint, EncryptedBalance,
+    use {
+        super::*,
+        bytemuck::Zeroable,
+        solana_sdk::{program_pack::Pack, pubkey::Pubkey},
+        solana_zk_sdk::encryption::{auth_encryption::AeKey, elgamal::ElGamalKeypair},
+        spl_pod::{optional_keys::OptionalNonZeroPubkey, primitives::PodBool},
+        spl_token_2022::{
+            extension::{
+                confidential_transfer::{
+                    ConfidentialTransferAccount, ConfidentialTransferMint, EncryptedBalance,
+                },
+                BaseStateWithExtensionsMut, StateWithExtensionsMut,
             },
-            BaseStateWithExtensionsMut, StateWithExtensionsMut,
+            state::AccountState,
         },
-        state::AccountState,
     };
-
-    use super::*;
 
     #[test]
     fn test_is_valid_mint_false() {

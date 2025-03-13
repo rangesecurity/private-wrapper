@@ -1,6 +1,6 @@
-# confidential-blink-api
-API for confidential blinks
+# Confidential Blink API
 
+Provides an API that can be used for confidential transfer blinks, and also as a general API for use with frontends to facilitate interaction with the confidential token extension
 
 ## Testing
 
