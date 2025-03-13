@@ -1,6 +1,6 @@
 use {
     super::get_user_ata, crate::tests::BlinkTestClient, common::test_helpers::test_key,
-    solana_client::nonblocking::rpc_client::RpcClient, solana_sdk::signature::Keypair,
+    solana_client::nonblocking::rpc_client::RpcClient, solana_sdk::{signature::Keypair, signer::Signer},
     std::sync::Arc,
 };
 
@@ -14,14 +14,14 @@ async fn test_deposit() {
 
     test_client.create_confidential_mint(&key, &mint).await;
 
-    test_client.test_initialize(&key, &mint).await;
+    test_client.test_initialize(&key, mint.pubkey()).await;
 
-    test_client.mint_tokens(&key, &mint, 1_000_000).await;
+    test_client.mint_tokens(&key, mint.pubkey(), 1_000_000).await;
 
     assert_eq!(
         test_client
             .rpc
-            .get_token_account_balance(&get_user_ata(&key, &mint))
+            .get_token_account_balance(&get_user_ata(&key, mint.pubkey()))
             .await
             .unwrap()
             .amount
@@ -30,12 +30,12 @@ async fn test_deposit() {
         1_000_000
     );
 
-    test_client.test_deposit(&key, &mint, 100).await;
-    test_client.test_apply(&key, &mint).await;
-    test_client.test_deposit(&key, &mint, 10).await;
+    test_client.test_deposit(&key, mint.pubkey(), 100).await;
+    test_client.test_apply(&key, mint.pubkey()).await;
+    test_client.test_deposit(&key, mint.pubkey(), 10).await;
 
-    let balances = test_client.get_balances(&key, &mint).await;
+    let balances = test_client.get_balances(&key, mint.pubkey()).await;
     assert_eq!(balances.pending_balance, 0.00001);
-    assert_eq!(balances.available_balnace, 0.0001);
+    assert_eq!(balances.available_balance, 0.0001);
     assert_eq!(balances.non_confidential_balance, 0.99989);
 }

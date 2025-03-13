@@ -3,7 +3,7 @@ use {
         router,
         types::{
             ApiBalancesResponse, ApiTransactionResponse, Balances, Deposit, InitializeOrApply,
-            Transfer, Withdraw,
+            Transfer, Withdraw, WrapTokens,
         },
     },
     axum_test::TestServer,
@@ -16,7 +16,7 @@ use {
     spl_token_2022::{extension::ExtensionType, state::Mint},
     spl_token_client::token::ExtensionInitializationParams,
     spl_token_wrap::{
-        get_wrapped_mint_address, get_wrapped_mint_backpointer_address, state::Backpointer,
+        get_wrapped_mint_address, get_wrapped_mint_authority, get_wrapped_mint_backpointer_address, state::Backpointer
     },
     std::sync::Arc,
 };
@@ -54,7 +54,7 @@ impl BlinkTestClient {
             server: TestServer::new(router::new(rpc)).unwrap(),
         }
     }
-    async fn test_initialize(&mut self, key: &Keypair, mint: &Keypair) {
+    async fn test_initialize(&mut self, key: &Keypair, mint: Pubkey) {
         println!("initializing confidential token account");
         let user_ata = get_user_ata(key, mint);
         let elgamal_sig = key.sign_message(&KeypairType::ElGamal.message_to_sign(user_ata));
@@ -62,7 +62,7 @@ impl BlinkTestClient {
 
         let init = InitializeOrApply {
             authority: key.pubkey(),
-            token_mint: mint.pubkey(),
+            token_mint: mint,
             elgamal_signature: elgamal_sig,
             ae_signature: ae_sig,
         };
@@ -75,12 +75,13 @@ impl BlinkTestClient {
         let response: ApiTransactionResponse = serde_json::from_slice(res.as_bytes()).unwrap();
         self.send_tx(key, response).await;
     }
-    async fn test_deposit(&mut self, key: &Keypair, mint: &Keypair, amount: u64) {
+    async fn test_deposit(&mut self, key: &Keypair, mint: Pubkey
+        , amount: u64) {
         println!("depositing to pending balance");
 
         let deposit = Deposit {
             authority: key.pubkey(),
-            token_mint: mint.pubkey(),
+            token_mint: mint,
             amount,
         };
         let res = self
@@ -92,7 +93,47 @@ impl BlinkTestClient {
         let response: ApiTransactionResponse = serde_json::from_slice(res.as_bytes()).unwrap();
         self.send_tx(key, response).await;
     }
-    async fn test_apply(&mut self, key: &Keypair, mint: &Keypair) {
+    async fn test_wrap_tokens(&mut self, key: &Keypair, unwrapped_mint: &Keypair, wrapped_mint: Pubkey, amount: u64) {
+        println!("privately wrapping tokens");
+
+        let wrap = WrapTokens {
+            authority: key.pubkey(),
+            unwrapped_token_mint: unwrapped_mint.pubkey(),
+            unwrapped_token_program: spl_token_2022::id(),
+            wrapped_token_mint: wrapped_mint,
+            amount,
+        };
+        let res = self
+            .server
+            .post("/private-wrapper/wrap")
+            .add_header("Content-Type", "application/json")
+            .bytes(serde_json::to_string(&wrap).unwrap().into())
+            .await;
+        let res = String::from_utf8(res.as_bytes().to_vec()).unwrap();
+        let response: ApiTransactionResponse = serde_json::from_str(&res).unwrap();
+        self.send_tx(key, response).await;
+    }
+    async fn test_unwrap_tokens(&mut self, key: &Keypair, unwrapped_mint: &Keypair, wrapped_mint: Pubkey, amount: u64) {
+        println!("privately wrapping tokens");
+
+        let wrap = WrapTokens {
+            authority: key.pubkey(),
+            unwrapped_token_mint: unwrapped_mint.pubkey(),
+            unwrapped_token_program: spl_token_2022::id(),
+            wrapped_token_mint: wrapped_mint,
+            amount,
+        };
+        let res = self
+            .server
+            .post("/private-wrapper/unwrap")
+            .add_header("Content-Type", "application/json")
+            .bytes(serde_json::to_string(&wrap).unwrap().into())
+            .await;
+        let res = String::from_utf8(res.as_bytes().to_vec()).unwrap();
+        let response: ApiTransactionResponse = serde_json::from_str(&res).unwrap();
+        self.send_tx(key, response).await;
+    }
+    async fn test_apply(&mut self, key: &Keypair, mint: Pubkey) {
         println!("applying pending balance");
         let user_ata = get_user_ata(key, mint);
         let elgamal_sig = key.sign_message(&KeypairType::ElGamal.message_to_sign(user_ata));
@@ -100,7 +141,7 @@ impl BlinkTestClient {
 
         let deposit = InitializeOrApply {
             authority: key.pubkey(),
-            token_mint: mint.pubkey(),
+            token_mint: mint,
             elgamal_signature: elgamal_sig,
             ae_signature: ae_sig,
         };
@@ -113,7 +154,7 @@ impl BlinkTestClient {
         let response: ApiTransactionResponse = serde_json::from_slice(res.as_bytes()).unwrap();
         self.send_tx(key, response).await;
     }
-    async fn test_withdraw(&mut self, key: &Keypair, mint: &Keypair, amount: u64) {
+    async fn test_withdraw(&mut self, key: &Keypair, mint: Pubkey, amount: u64) {
         println!("withdrawing confidential tokens");
         let user_ata = get_user_ata(key, mint);
         let elgamal_sig = key.sign_message(&KeypairType::ElGamal.message_to_sign(user_ata));
@@ -124,7 +165,7 @@ impl BlinkTestClient {
 
         let withdraw = Withdraw {
             authority: key.pubkey(),
-            token_mint: mint.pubkey(),
+            token_mint: mint,
             amount,
             elgamal_signature: elgamal_sig,
             ae_signature: ae_sig,
@@ -156,7 +197,7 @@ impl BlinkTestClient {
     async fn test_transfer(
         &mut self,
         key: &Keypair,
-        mint: &Keypair,
+        mint: Pubkey,
         receipient: &Keypair,
         amount: u64,
     ) {
@@ -171,12 +212,12 @@ impl BlinkTestClient {
 
         let withdraw = Transfer {
             authority: key.pubkey(),
-            token_mint: mint.pubkey(),
+            token_mint: mint,
             amount,
             receiving_token_account:
                 spl_associated_token_account::get_associated_token_address_with_program_id(
                     &receipient.pubkey(),
-                    &mint.pubkey(),
+                    &mint,
                     &spl_token_2022::id(),
                 ),
             elgamal_signature: elgamal_sig,
@@ -212,14 +253,14 @@ impl BlinkTestClient {
             self.rpc.send_and_confirm_transaction(&tx).await.unwrap();
         }
     }
-    async fn get_balances(&mut self, key: &Keypair, mint: &Keypair) -> ApiBalancesResponse {
+    async fn get_balances(&mut self, key: &Keypair, mint: Pubkey) -> ApiBalancesResponse {
         let user_ata = get_user_ata(key, mint);
         let elgamal_sig = key.sign_message(&KeypairType::ElGamal.message_to_sign(user_ata));
         let ae_sig = key.sign_message(&KeypairType::Ae.message_to_sign(user_ata));
 
         let balances = Balances {
             authority: key.pubkey(),
-            token_mint: mint.pubkey(),
+            token_mint: mint,
             elgamal_signature: elgamal_sig,
             ae_signature: ae_sig,
         };
@@ -363,13 +404,24 @@ impl BlinkTestClient {
         tx.sign(&vec![key], self.rpc.get_latest_blockhash().await.unwrap());
 
         self.rpc.send_and_confirm_transaction(&tx).await.unwrap();
+
+        // create the escrow account
+        let ix = spl_associated_token_account::instruction::create_associated_token_account_idempotent(
+            &key.pubkey(),
+            &get_wrapped_mint_authority(&wrapped_mint_address),
+            &unwrapped_mint.pubkey(),
+            &spl_token_2022::id(),
+        );
+        let mut tx = Transaction::new_with_payer(&[ix], Some(&key.pubkey()));
+        tx.sign(&vec![key], self.rpc.get_latest_blockhash().await.unwrap());
+        self.rpc.send_and_confirm_transaction(&tx).await.unwrap();
         wrapped_mint_address
     }
-    async fn mint_tokens(&mut self, key: &Keypair, mint: &Keypair, amount: u64) {
+    async fn mint_tokens(&mut self, key: &Keypair, mint: Pubkey, amount: u64) {
         let mut tx = Transaction::new_with_payer(
             &[spl_token_2022::instruction::mint_to(
                 &spl_token_2022::id(),
-                &mint.pubkey(),
+                &mint,
                 &get_user_ata(key, mint),
                 &key.pubkey(),
                 &[&key.pubkey()],
@@ -419,10 +471,10 @@ impl BlinkTestClient {
     }
 }
 
-pub fn get_user_ata(key: &Keypair, mint: &Keypair) -> Pubkey {
+pub fn get_user_ata(key: &Keypair, mint: Pubkey) -> Pubkey {
     spl_associated_token_account::get_associated_token_address_with_program_id(
         &key.pubkey(),
-        &mint.pubkey(),
+        &mint,
         &spl_token_2022::id(),
     )
 }

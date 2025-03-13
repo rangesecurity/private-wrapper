@@ -127,6 +127,25 @@ pub struct Balances {
     pub ae_signature: Signature,
 }
 
+/// JSON request used to wrap or unwrap tokens
+#[derive(Serialize, Deserialize)]
+pub struct WrapTokens {
+    /// The public key of the wallet which is depositing tokens
+    #[serde(with = "serde_utils::pubkey_string")]
+    pub authority: Pubkey,
+    /// The unwrapped token mint
+    #[serde(with = "serde_utils::pubkey_string")]
+    pub unwrapped_token_mint: Pubkey,
+    #[serde(with = "serde_utils::pubkey_string")]
+    /// The confidential wrapped mint
+    pub wrapped_token_mint: Pubkey,
+    #[serde(with = "serde_utils::pubkey_string")]
+    /// The token program of the unwrapped mint
+    pub unwrapped_token_program: Pubkey,
+    /// Amount of unwrapped tokens to wrap
+    pub amount: u64,
+}
+
 /// JSON response indicating an error message
 #[derive(Serialize, Deserialize)]
 pub struct ApiError {
@@ -143,12 +162,12 @@ pub struct ApiTransactionResponse {
 }
 
 /// JSON response containing account balances
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct ApiBalancesResponse {
     /// The amount of tokens pending application to the available confidential balance
     pub pending_balance: f64,
     /// The amount of tokens available as confidential balance
-    pub available_balnace: f64,
+    pub available_balance: f64,
     // The amount of non confidential tokens
     pub non_confidential_balance: f64,
 }

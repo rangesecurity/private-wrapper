@@ -245,7 +245,7 @@ pub async fn balances(
         StatusCode::OK,
         Json(ApiBalancesResponse {
             pending_balance: spl_token_2022::amount_to_ui_amount(pending_balance, decimals),
-            available_balnace: spl_token_2022::amount_to_ui_amount(
+            available_balance: spl_token_2022::amount_to_ui_amount(
                 decrypted_available_balance,
                 decimals,
             ),

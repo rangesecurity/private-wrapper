@@ -38,6 +38,8 @@ pub fn new(rpc: Arc<RpcClient>) -> Router {
         .route("/confidential-balances/transfer", post(handlers::transfer))
         .route("/confidential-balances/apply", post(handlers::apply))
         .route("/confidential-balances/balances", post(handlers::balances))
+        .route("/private-wrapper/wrap", post(handlers::wrap_tokens))
+        .route("/private-wrapper/unwrap", post(handlers::unwrap_tokens))
         .with_state(Arc::new(AppState { rpc }))
         .layer(
             TraceLayer::new_for_http().on_response(
