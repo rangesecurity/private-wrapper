@@ -1,7 +1,7 @@
 use {
     crate::{
         router::AppState,
-        types::{ApiError, ApiResponse, DepositOrWithdraw},
+        types::{ApiError, ApiTransactionResponse, Withdraw},
     },
     axum::{extract::State, response::IntoResponse, Json},
     base64::{prelude::BASE64_STANDARD, Engine},
@@ -11,11 +11,11 @@ use {
         proofs::get_zk_proof_context_state_account_creation_instructions,
     },
     http::StatusCode,
-    solana_sdk::{signature::Keypair, signer::Signer, transaction::Transaction},
+    solana_sdk::{signer::Signer, transaction::Transaction},
     spl_token_2022::{
         extension::{
             confidential_transfer::{
-                account_info::{ApplyPendingBalanceAccountInfo, WithdrawAccountInfo},
+                account_info::WithdrawAccountInfo,
                 instruction::{
                     BatchedRangeProofContext, CiphertextCommitmentEqualityProofContext,
                     ProofContextState,
@@ -34,14 +34,9 @@ use {
 };
 
 /// Handler which is used to withdraw tokens from the confidential balance to the public balance
-///
-/// # Errors
-///
-/// * Token acount does not exist and/or not configured for confidential transfers
-/// * Insufficient token amount
 pub async fn withdraw(
     State(state): State<Arc<AppState>>,
-    Json(payload): Json<DepositOrWithdraw>,
+    Json(payload): Json<Withdraw>,
 ) -> impl IntoResponse {
     // derive the ATA for the authority + token_mint
     let user_ata = spl_associated_token_account::get_associated_token_address_with_program_id(
@@ -170,7 +165,7 @@ pub async fn withdraw(
         };
 
     // ensure the token mint is valid for confidential transfers
-    if !common::accounts::is_valid_mint(token_mint) {
+    if !common::accounts::is_valid_mint(&token_mint) {
         return (
             StatusCode::BAD_REQUEST,
             Json(ApiError {
@@ -214,20 +209,21 @@ pub async fn withdraw(
     // Confidential Transfer extension information needed to construct a `Withdraw` instruction.
     let withdraw_account_info = WithdrawAccountInfo::new(confidential_transfer_account);
 
-    println!("available balance {}", ae_key.decrypt(&withdraw_account_info.decryptable_available_balance.try_into().unwrap()).unwrap());
-
     // Create a withdraw proof data
     let WithdrawProofData {
         equality_proof_data,
         range_proof_data,
     } = match withdraw_account_info.generate_proof_data(payload.amount, &elgamal_key, &ae_key) {
         Ok(proof) => proof,
-        Err(err) => return (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(ApiError {
-                msg: format!("failed to generate withdraw proof {err:#?}")
-            })
-        ).into_response()
+        Err(err) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ApiError {
+                    msg: format!("failed to generate withdraw proof {err:#?}"),
+                }),
+            )
+                .into_response()
+        }
     };
 
     let range_proof_rent = match state
@@ -268,14 +264,11 @@ pub async fn withdraw(
         }
     };
 
-    let equality_proof_context_state_keypair = Keypair::new();
-    let range_proof_context_state_keypair = Keypair::new();
-
     // Range Proof Instructions------------------------------------------------------------------------------
     let (range_create_ix, range_verify_ix) =
         match get_zk_proof_context_state_account_creation_instructions(
             &payload.authority,
-            &range_proof_context_state_keypair.pubkey(),
+            &payload.range_proof_keypair.pubkey(),
             &payload.authority,
             &range_proof_data,
             range_proof_rent,
@@ -296,7 +289,7 @@ pub async fn withdraw(
     let (equality_create_ix, equality_verify_ix) =
         match get_zk_proof_context_state_account_creation_instructions(
             &payload.authority,
-            &equality_proof_context_state_keypair.pubkey(),
+            &payload.equality_proof_keypair.pubkey(),
             &payload.authority,
             &equality_proof_data,
             equality_proof_rent,
@@ -341,8 +334,8 @@ pub async fn withdraw(
             &new_decryptable_available_balance.into(),
             &payload.authority,
             &vec![],
-            ProofLocation::ContextStateAccount(&equality_proof_context_state_keypair.pubkey()),
-            ProofLocation::ContextStateAccount(&range_proof_context_state_keypair.pubkey()),
+            ProofLocation::ContextStateAccount(&payload.equality_proof_keypair.pubkey()),
+            ProofLocation::ContextStateAccount(&payload.range_proof_keypair.pubkey()),
         )
         .unwrap();
         Transaction::new_with_payer(&instructions, Some(&payload.authority))
@@ -352,7 +345,7 @@ pub async fn withdraw(
         // Close the equality proof account
         let close_equality_proof_instruction = close_context_state(
             ContextStateInfo {
-                context_state_account: &equality_proof_context_state_keypair.pubkey(),
+                context_state_account: &payload.equality_proof_keypair.pubkey(),
                 context_state_authority: &payload.authority,
             },
             &payload.authority,
@@ -361,7 +354,7 @@ pub async fn withdraw(
         // Close the range proof account
         let close_range_proof_instruction = close_context_state(
             ContextStateInfo {
-                context_state_account: &range_proof_context_state_keypair.pubkey(),
+                context_state_account: &payload.range_proof_keypair.pubkey(),
                 context_state_authority: &payload.authority,
             },
             &payload.authority,
@@ -388,5 +381,9 @@ pub async fn withdraw(
         )
             .into_response();
     }
-    (StatusCode::OK, Json(ApiResponse { transactions: txs })).into_response()
+    (
+        StatusCode::OK,
+        Json(ApiTransactionResponse { transactions: txs }),
+    )
+        .into_response()
 }

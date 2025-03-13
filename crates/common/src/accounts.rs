@@ -13,7 +13,7 @@ use {
 /// Validates that:
 /// * The account is an spl_token_2022 mint account
 /// * Supports the ConfidentialTransferMint extension
-pub fn is_valid_mint(mint: Account) -> bool {
+pub fn is_valid_mint(mint: &Account) -> bool {
     // unpack the mint account
     let Ok(state) = StateWithExtensions::<Mint>::unpack(&mint.data) else {
         return false;
@@ -53,21 +53,22 @@ pub fn token_account_already_configured(account: &Account) -> bool {
 
 #[cfg(test)]
 mod test {
-    use bytemuck::Zeroable;
-    use solana_sdk::{program_pack::Pack, pubkey::Pubkey};
-    use solana_zk_sdk::encryption::{auth_encryption::AeKey, elgamal::ElGamalKeypair};
-    use spl_pod::{optional_keys::OptionalNonZeroPubkey, primitives::PodBool};
-    use spl_token_2022::{
-        extension::{
-            confidential_transfer::{
-                ConfidentialTransferAccount, ConfidentialTransferMint, EncryptedBalance,
+    use {
+        super::*,
+        bytemuck::Zeroable,
+        solana_sdk::{program_pack::Pack, pubkey::Pubkey},
+        solana_zk_sdk::encryption::{auth_encryption::AeKey, elgamal::ElGamalKeypair},
+        spl_pod::{optional_keys::OptionalNonZeroPubkey, primitives::PodBool},
+        spl_token_2022::{
+            extension::{
+                confidential_transfer::{
+                    ConfidentialTransferAccount, ConfidentialTransferMint, EncryptedBalance,
+                },
+                BaseStateWithExtensionsMut, StateWithExtensionsMut,
             },
-            BaseStateWithExtensionsMut, StateWithExtensionsMut,
+            state::AccountState,
         },
-        state::AccountState,
     };
-
-    use super::*;
 
     #[test]
     fn test_is_valid_mint_false() {
@@ -78,7 +79,7 @@ mod test {
         };
         Mint::pack(mint, &mut account_data).unwrap();
 
-        assert!(!is_valid_mint(Account {
+        assert!(!is_valid_mint(&Account {
             data: account_data,
             ..Default::default()
         }));
@@ -86,7 +87,7 @@ mod test {
 
     #[test]
     fn test_is_valid_mint_not_a_mint() {
-        assert!(!is_valid_mint(Account {
+        assert!(!is_valid_mint(&Account {
             data: vec![1, 2, 3, 4],
             ..Default::default()
         }))
@@ -119,7 +120,7 @@ mod test {
         state.pack_base();
         state.init_account_type().unwrap();
 
-        assert!(is_valid_mint(Account {
+        assert!(is_valid_mint(&Account {
             data: account_data,
             ..Default::default()
         }))

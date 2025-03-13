@@ -5,8 +5,9 @@ use {
 };
 
 #[tokio::test(flavor = "multi_thread")]
-async fn test_deposit() {
+async fn test_transfer() {
     let key = test_key();
+    let key2 = Keypair::new();
     let mint = Keypair::new();
     let rpc = Arc::new(RpcClient::new("http://localhost:8899".to_string()));
 
@@ -30,12 +31,13 @@ async fn test_deposit() {
         1_000_000
     );
 
+    // delay the initialization of key2 token account to allow airdrop request to bul confirmed
+    test_client.test_initialize(&key2, &mint).await;
+
     test_client.test_deposit(&key, &mint, 100).await;
     test_client.test_apply(&key, &mint).await;
-    test_client.test_deposit(&key, &mint, 10).await;
 
-    let balances = test_client.get_balances(&key, &mint).await;
-    assert_eq!(balances.pending_balance, 0.00001);
-    assert_eq!(balances.available_balnace, 0.0001);
-    assert_eq!(balances.non_confidential_balance, 0.99989);
+    test_client.test_transfer(&key, &mint, &key2, 10).await;
+
+    test_client.test_apply(&key2, &mint).await;
 }

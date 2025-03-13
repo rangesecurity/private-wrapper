@@ -1,7 +1,7 @@
 use {
     crate::{
         router::AppState,
-        types::{ApiError, ApiResponse, Initialize},
+        types::{ApiError, ApiTransactionResponse, InitializeOrApply},
     },
     axum::{extract::State, response::IntoResponse, Json},
     base64::{prelude::BASE64_STANDARD, Engine},
@@ -19,15 +19,10 @@ use {
     std::sync::Arc,
 };
 
-/// Handler which is used to construct the deposit + aply balance instructions
-///
-/// # Errors
-///
-/// * Token account is initialized with extension already
-/// * Mint account does not support ConfidentialTransferMint
+/// Handler which is used to initialize the confidential token account
 pub async fn initialize(
     State(state): State<Arc<AppState>>,
-    Json(payload): Json<Initialize>,
+    Json(payload): Json<InitializeOrApply>,
 ) -> impl IntoResponse {
     // derive the ATA for the authority + token_mint
     let user_ata = spl_associated_token_account::get_associated_token_address_with_program_id(
@@ -110,7 +105,7 @@ pub async fn initialize(
     }
 
     // ensure the token mint is valid for confidential transfers
-    if !common::accounts::is_valid_mint(token_mint) {
+    if !common::accounts::is_valid_mint(&token_mint) {
         return (
             StatusCode::BAD_REQUEST,
             Json(ApiError {
@@ -217,7 +212,7 @@ pub async fn initialize(
     };
     (
         StatusCode::OK,
-        Json(ApiResponse {
+        Json(ApiTransactionResponse {
             transactions: vec![BASE64_STANDARD.encode(tx)],
         }),
     )
