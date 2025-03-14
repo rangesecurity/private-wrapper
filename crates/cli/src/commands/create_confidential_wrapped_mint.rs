@@ -9,7 +9,7 @@ use solana_sdk::{
 };
 use spl_token_2022::extension::ExtensionType;
 use spl_token_wrap::{
-    get_wrapped_mint_address, get_wrapped_mint_backpointer_address, state::Backpointer,
+    get_wrapped_mint_address, get_wrapped_mint_authority, get_wrapped_mint_backpointer_address, state::Backpointer
 };
 
 pub async fn create_token_mint(
@@ -22,7 +22,7 @@ pub async fn create_token_mint(
     let unwrapped_mint_program: Pubkey = unwrapped_mint_program.parse().unwrap();
     let rpc = RpcClient::new(rpc_url);
     let key = Keypair::read_from_file(keypair).unwrap();
-    let wrapped_mint_address = get_wrapped_mint_address(&unwrapped_mint, &unwrapped_mint_program);
+    let wrapped_mint_address = get_wrapped_mint_address(&unwrapped_mint, &spl_token_2022::id());
 
     let backpoint_rent = rpc
         .get_minimum_balance_for_rent_exemption(std::mem::size_of::<Backpointer>())
@@ -59,10 +59,18 @@ pub async fn create_token_mint(
             (wrapped_mint_address, mint_rent),
         ],
     ));
+    ixs.push(spl_associated_token_account::instruction::create_associated_token_account(
+        &key.pubkey(),
+        &get_wrapped_mint_authority(&wrapped_mint_address),
+        &unwrapped_mint,
+        &unwrapped_mint_program
+    ));
     ixs.push(ix);
     let mut tx = Transaction::new_with_payer(&ixs, Some(&key.pubkey()));
     tx.sign(&vec![key], rpc.get_latest_blockhash().await.unwrap());
-
-    rpc.send_and_confirm_transaction(&tx).await.unwrap();
+    
+    log::info!("creating confidential wrapped mint");
+    let sig = rpc.send_and_confirm_transaction(&tx).await.unwrap();
+    log::info!("sent tx {sig}");
     Ok(())
 }
