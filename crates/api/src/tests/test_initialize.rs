@@ -1,6 +1,8 @@
 use {
-    crate::tests::BlinkTestClient, common::test_helpers::test_key,
-    solana_client::nonblocking::rpc_client::RpcClient, solana_sdk::{signature::Keypair, signer::Signer},
+    crate::tests::BlinkTestClient,
+    common::test_helpers::test_key,
+    solana_client::nonblocking::rpc_client::RpcClient,
+    solana_sdk::{signature::Keypair, signer::Signer},
     std::sync::Arc,
 };
 

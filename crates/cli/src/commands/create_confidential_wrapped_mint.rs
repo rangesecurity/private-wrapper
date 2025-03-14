@@ -1,6 +1,5 @@
 use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::{
-    program_pack::Pack,
     pubkey::Pubkey,
     signature::Keypair,
     signer::{EncodableKey, Signer},
@@ -9,7 +8,8 @@ use solana_sdk::{
 };
 use spl_token_2022::extension::ExtensionType;
 use spl_token_wrap::{
-    get_wrapped_mint_address, get_wrapped_mint_authority, get_wrapped_mint_backpointer_address, state::Backpointer
+    get_wrapped_mint_address, get_wrapped_mint_authority, get_wrapped_mint_backpointer_address,
+    state::Backpointer,
 };
 
 pub async fn create_token_mint(
@@ -59,16 +59,18 @@ pub async fn create_token_mint(
             (wrapped_mint_address, mint_rent),
         ],
     ));
-    ixs.push(spl_associated_token_account::instruction::create_associated_token_account(
-        &key.pubkey(),
-        &get_wrapped_mint_authority(&wrapped_mint_address),
-        &unwrapped_mint,
-        &unwrapped_mint_program
-    ));
+    ixs.push(
+        spl_associated_token_account::instruction::create_associated_token_account(
+            &key.pubkey(),
+            &get_wrapped_mint_authority(&wrapped_mint_address),
+            &unwrapped_mint,
+            &unwrapped_mint_program,
+        ),
+    );
     ixs.push(ix);
     let mut tx = Transaction::new_with_payer(&ixs, Some(&key.pubkey()));
     tx.sign(&vec![key], rpc.get_latest_blockhash().await.unwrap());
-    
+
     log::info!("creating confidential wrapped mint");
     let sig = rpc.send_and_confirm_transaction(&tx).await.unwrap();
     log::info!("sent tx {sig}");

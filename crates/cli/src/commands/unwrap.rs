@@ -3,9 +3,9 @@ use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::{
     pubkey::Pubkey,
     signature::Keypair,
-    signer::{EncodableKey, Signer}, transaction::Transaction,
+    signer::{EncodableKey, Signer},
 };
-use spl_token_wrap::{get_wrapped_mint_address, get_wrapped_mint_authority};
+use spl_token_wrap::get_wrapped_mint_address;
 
 pub async fn unwrap(
     api_url: String,
@@ -25,10 +25,7 @@ pub async fn unwrap(
     let payload = WrapTokens {
         authority: key.pubkey(),
         unwrapped_token_mint: unwrapped_mint,
-        wrapped_token_mint:  get_wrapped_mint_address(
-            &unwrapped_mint,
-            &spl_token_2022::id(),
-        ),
+        wrapped_token_mint: get_wrapped_mint_address(&unwrapped_mint, &spl_token_2022::id()),
         unwrapped_token_program: unwrapped_mint_program,
         amount,
     };

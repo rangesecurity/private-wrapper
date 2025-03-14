@@ -1,4 +1,4 @@
-use api::types::{ApiTransactionResponse, InitializeOrApply, Transfer, WrapTokens};
+use api::types::{ApiTransactionResponse, Transfer};
 use common::key_generator::KeypairType;
 use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::{
@@ -6,7 +6,7 @@ use solana_sdk::{
     signature::Keypair,
     signer::{EncodableKey, Signer},
 };
-use spl_token_wrap::{get_wrapped_mint_address, get_wrapped_mint_authority};
+use spl_token_wrap::get_wrapped_mint_address;
 
 pub async fn transfer(
     api_url: String,
@@ -19,21 +19,18 @@ pub async fn transfer(
     let rpc = RpcClient::new(rpc_url);
     let unwrapped_mint: Pubkey = unwrapped_mint.parse().unwrap();
     let recipient: Pubkey = recipient.parse().unwrap();
-    let wrapped_mint = get_wrapped_mint_address(
-        &unwrapped_mint,
-        &spl_token_2022::id()
-    );
+    let wrapped_mint = get_wrapped_mint_address(&unwrapped_mint, &spl_token_2022::id());
     let recipient = spl_associated_token_account::get_associated_token_address_with_program_id(
         &recipient,
         &wrapped_mint,
-        &spl_token_2022::id()
+        &spl_token_2022::id(),
     );
     let key = Keypair::read_from_file(keypair).unwrap();
 
     let user_ata = spl_associated_token_account::get_associated_token_address_with_program_id(
         &key.pubkey(),
         &wrapped_mint,
-        &spl_token_2022::id()
+        &spl_token_2022::id(),
     );
     let elgamal_sig = key.sign_message(&KeypairType::ElGamal.message_to_sign(user_ata));
     let ae_sig = key.sign_message(&KeypairType::Ae.message_to_sign(user_ata));
@@ -51,8 +48,8 @@ pub async fn transfer(
         elgamal_signature: elgamal_sig,
         ae_signature: ae_sig,
         equality_proof_keypair: equality_proof_keypair.insecure_clone(),
-            range_proof_keypair: range_proof_keypair.insecure_clone(),
-            ciphertext_validity_proof_keypair: ciphertext_proof_keypair.insecure_clone(),
+        range_proof_keypair: range_proof_keypair.insecure_clone(),
+        ciphertext_validity_proof_keypair: ciphertext_proof_keypair.insecure_clone(),
         amount,
     };
 
@@ -75,10 +72,17 @@ pub async fn transfer(
                 continue;
             };
             if idx == 0 {
-                tx.sign(&vec![&key, &equality_proof_keypair, &range_proof_keypair, &ciphertext_proof_keypair], blockhash);
+                tx.sign(
+                    &vec![
+                        &key,
+                        &equality_proof_keypair,
+                        &range_proof_keypair,
+                        &ciphertext_proof_keypair,
+                    ],
+                    blockhash,
+                );
             } else {
                 tx.sign(&vec![&key], blockhash);
-    
             }
             log::info!("sending transfer tx({idx})");
             let sig = match rpc.send_and_confirm_transaction(&tx).await {
@@ -91,7 +95,6 @@ pub async fn transfer(
             log::info!("sent transfer tx({idx}) {sig})");
             break;
         }
-
     }
 
     Ok(())

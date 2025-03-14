@@ -1,13 +1,11 @@
-use api::types::{ApiTransactionResponse, Deposit, InitializeOrApply, WrapTokens};
-use common::key_generator::KeypairType;
+use api::types::{ApiTransactionResponse, Deposit};
 use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::{
     pubkey::Pubkey,
     signature::Keypair,
     signer::{EncodableKey, Signer},
 };
-use spl_token_wrap::{get_wrapped_mint_address, get_wrapped_mint_authority};
-
+use spl_token_wrap::get_wrapped_mint_address;
 pub async fn deposit(
     api_url: String,
     rpc_url: String,
@@ -17,17 +15,14 @@ pub async fn deposit(
 ) -> anyhow::Result<()> {
     let rpc = RpcClient::new(rpc_url);
     let unwrapped_mint: Pubkey = unwrapped_mint.parse().unwrap();
-    let wrapped_mint = get_wrapped_mint_address(
-        &unwrapped_mint,
-        &spl_token_2022::id()
-    );
+    let wrapped_mint = get_wrapped_mint_address(&unwrapped_mint, &spl_token_2022::id());
     let key = Keypair::read_from_file(keypair).unwrap();
     let client = reqwest::ClientBuilder::new().build()?;
 
     let payload = Deposit {
         authority: key.pubkey(),
         token_mint: wrapped_mint,
-        amount
+        amount,
     };
 
     log::info!("{}", serde_json::to_string_pretty(&payload).unwrap());

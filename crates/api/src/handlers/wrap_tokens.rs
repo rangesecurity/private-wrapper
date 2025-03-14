@@ -1,28 +1,18 @@
 use {
     crate::{
         router::AppState,
-        types::{ApiError, ApiTransactionResponse, InitializeOrApply, WrapTokens},
+        types::{ApiError, ApiTransactionResponse, WrapTokens},
     },
-    axum::{extract::State, response::IntoResponse, Extension, Json},
+    axum::{extract::State, response::IntoResponse, Json},
     base64::{prelude::BASE64_STANDARD, Engine},
-    common::{
-        accounts::token_account_already_configured,
-        key_generator::{derive_ae_key, derive_elgamal_key, KeypairType},
-    },
     http::StatusCode,
     solana_sdk::transaction::Transaction,
-    spl_token_2022::extension::{
-        confidential_transfer::{
-            account_info::ApplyPendingBalanceAccountInfo, ConfidentialTransferAccount,
-        },
-        BaseStateWithExtensions, StateWithExtensions,
-    },
     spl_token_wrap::get_wrapped_mint_authority,
     std::sync::Arc,
 };
 
 pub async fn wrap_tokens(
-    State(state): State<Arc<AppState>>,
+    State(_state): State<Arc<AppState>>,
     Json(payload): Json<WrapTokens>,
 ) -> impl IntoResponse {
     let unwrapped_user_ata =

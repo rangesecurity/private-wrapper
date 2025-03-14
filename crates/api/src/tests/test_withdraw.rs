@@ -1,6 +1,9 @@
 use {
-    super::get_user_ata, crate::tests::BlinkTestClient, common::test_helpers::test_key,
-    solana_client::nonblocking::rpc_client::RpcClient, solana_sdk::{signature::Keypair, signer::Signer},
+    super::get_user_ata,
+    crate::tests::BlinkTestClient,
+    common::test_helpers::test_key,
+    solana_client::nonblocking::rpc_client::RpcClient,
+    solana_sdk::{signature::Keypair, signer::Signer},
     std::sync::Arc,
 };
 
@@ -14,7 +17,9 @@ async fn test_withdraw() {
 
     test_client.test_initialize(&key, mint.pubkey()).await;
 
-    test_client.mint_tokens(&key, mint.pubkey(), 1_000_000).await;
+    test_client
+        .mint_tokens(&key, mint.pubkey(), 1_000_000)
+        .await;
 
     assert_eq!(
         test_client

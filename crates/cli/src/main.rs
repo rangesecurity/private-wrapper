@@ -1,9 +1,9 @@
 use std::str::FromStr;
 
 use clap::Parser;
+use commands::Commands;
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, Layer};
-use commands::Commands;
 
 mod commands;
 
@@ -13,75 +13,108 @@ pub async fn main() -> anyhow::Result<()> {
     init_log(&cli.log_level);
 
     match cli.command {
-        Commands::StartAPI { listen_url, rpc_url } => {
-            commands::api::start_api(listen_url, rpc_url).await
-        }
-        Commands::CreateConfidentialWrappedMint { rpc_url, keypair, unwrapped_mint, unwrapped_mint_program }=> {
-            commands::create_confidential_wrapped_mint::create_token_mint( rpc_url, keypair, unwrapped_mint, unwrapped_mint_program).await
-        }
-        Commands::WrapTokens { api_url,rpc_url, keypair, unwrapped_mint,  unwrapped_mint_program, amount } => {
-            commands::wrap::wrap(api_url, rpc_url,keypair, unwrapped_mint, unwrapped_mint_program, amount).await
-        }
-        Commands::Initialize { api_url, rpc_url, keypair, unwrapped_mint } => {
-            commands::initialize::initialize(
-                api_url,
+        Commands::StartAPI {
+            listen_url,
+            rpc_url,
+        } => commands::api::start_api(listen_url, rpc_url).await,
+        Commands::CreateConfidentialWrappedMint {
+            rpc_url,
+            keypair,
+            unwrapped_mint,
+            unwrapped_mint_program,
+        } => {
+            commands::create_confidential_wrapped_mint::create_token_mint(
                 rpc_url,
                 keypair,
-                unwrapped_mint
-            ).await
+                unwrapped_mint,
+                unwrapped_mint_program,
+            )
+            .await
         }
-        Commands::Deposit { api_url, rpc_url, keypair, unwrapped_mint, amount } => {
-            commands::deposit::deposit(
+        Commands::WrapTokens {
+            api_url,
+            rpc_url,
+            keypair,
+            unwrapped_mint,
+            unwrapped_mint_program,
+            amount,
+        } => {
+            commands::wrap::wrap(
                 api_url,
                 rpc_url,
                 keypair,
                 unwrapped_mint,
-                amount
-            ).await
+                unwrapped_mint_program,
+                amount,
+            )
+            .await
         }
-        Commands::Apply { api_url, rpc_url, keypair, unwrapped_mint } => {
-            commands::apply::apply(
-                api_url,
-                rpc_url,
-                keypair,
-                unwrapped_mint
-            ).await
-        }
-        Commands::Balances { api_url, keypair, unwrapped_mint } => {
-            commands::balances::balances(
-                api_url,
-                keypair,
-                unwrapped_mint
-            ).await
-        }
-        Commands::Transfer { api_url, rpc_url, keypair, unwrapped_mint, recipient, amount } => {
+        Commands::Initialize {
+            api_url,
+            rpc_url,
+            keypair,
+            unwrapped_mint,
+        } => commands::initialize::initialize(api_url, rpc_url, keypair, unwrapped_mint).await,
+        Commands::Deposit {
+            api_url,
+            rpc_url,
+            keypair,
+            unwrapped_mint,
+            amount,
+        } => commands::deposit::deposit(api_url, rpc_url, keypair, unwrapped_mint, amount).await,
+        Commands::Apply {
+            api_url,
+            rpc_url,
+            keypair,
+            unwrapped_mint,
+        } => commands::apply::apply(api_url, rpc_url, keypair, unwrapped_mint).await,
+        Commands::Balances {
+            api_url,
+            keypair,
+            unwrapped_mint,
+        } => commands::balances::balances(api_url, keypair, unwrapped_mint).await,
+        Commands::Transfer {
+            api_url,
+            rpc_url,
+            keypair,
+            unwrapped_mint,
+            recipient,
+            amount,
+        } => {
             commands::transfer::transfer(
                 api_url,
                 rpc_url,
                 keypair,
                 recipient,
                 unwrapped_mint,
-                amount
-            ).await
+                amount,
+            )
+            .await
         }
-        Commands::Withdraw { api_url, rpc_url, keypair, unwrapped_mint, amount } => {
-            commands::withdraw::withdraw(
-                api_url,
-                rpc_url,
-                keypair,
-                unwrapped_mint,
-                amount
-            ).await
-        }
-        Commands::UnwrapTokens { api_url, rpc_url, keypair, unwrapped_mint, unwrapped_mint_program, amount } => {
+        Commands::Withdraw {
+            api_url,
+            rpc_url,
+            keypair,
+            unwrapped_mint,
+            amount,
+        } => commands::withdraw::withdraw(api_url, rpc_url, keypair, unwrapped_mint, amount).await,
+        Commands::UnwrapTokens {
+            api_url,
+            rpc_url,
+            keypair,
+            unwrapped_mint,
+            unwrapped_mint_program,
+            amount,
+        } => {
             commands::unwrap::unwrap(
                 api_url,
                 rpc_url,
                 keypair,
                 unwrapped_mint,
                 unwrapped_mint_program,
-                amount
-            ).await
+                amount,
+            )
+            .await
         }
     }
 }
