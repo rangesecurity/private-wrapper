@@ -64,6 +64,25 @@ pub async fn main() -> anyhow::Result<()> {
                 amount
             ).await
         }
+        Commands::Withdraw { api_url, rpc_url, keypair, unwrapped_mint, amount } => {
+            commands::withdraw::withdraw(
+                api_url,
+                rpc_url,
+                keypair,
+                unwrapped_mint,
+                amount
+            ).await
+        }
+        Commands::UnwrapTokens { api_url, rpc_url, keypair, unwrapped_mint, unwrapped_mint_program, amount } => {
+            commands::unwrap::unwrap(
+                api_url,
+                rpc_url,
+                keypair,
+                unwrapped_mint,
+                unwrapped_mint_program,
+                amount
+            ).await
+        }
     }
 }
 

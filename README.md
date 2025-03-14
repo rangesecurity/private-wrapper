@@ -16,9 +16,7 @@ $> make test-validator
 $> cargo test
 ```
 
-## Wrapping Tokens
-
-### Initialize Confidential Transfer Account
+## Initialize Confidential Transfer Account
 
 This will need to be done only once, and involves creating the confidential token account for the wrapped token mint.
 
@@ -49,7 +47,9 @@ The response will be an aray of bincode serialized, base64 encoded transactions 
 
 ```
 
-### Wrap The Tokens
+## Wrap The Tokens
+
+> Note: You must first initialize the confidential transfer account
 
 Send a `POST` request to `http://example.com/private-wrapper/wrap` with the following payload. 
 
@@ -80,7 +80,7 @@ The response will be an aray of bincode serialized, base64 encoded transactions 
 ```
 
 
-### Deposit Wrapped Tokens
+## Deposit Wrapped Tokens
 
 To deposit your non confidential wrapped balance into the pending confidential balance send a `POST` request to `http://example.com/confidential-balances/deposit` with the following payload
 
@@ -108,7 +108,7 @@ The response will be an aray of bincode serialized, base64 encoded transactions 
 ```
 
 
-### Apply Pending Balance
+## Apply Pending Balance
 
 To apply the pending confidential balance send a `POST` request to `http://example.com/confidential-balances/apply` with the following payload
 
@@ -137,7 +137,7 @@ The response will be an aray of bincode serialized, base64 encoded transactions 
 ```
 
 
-### Get Balances
+## Get Balances
 
 To get confidential and non confidential balances for the confidential wrapped mint send a `POST` request to `http://example.com/confidential-balances/balances` with the following payload
 
@@ -171,7 +171,10 @@ The response will be a JSON object with the following fields
 }    
 ```
 
-### Transferring Confidential Tokens
+## Transferring Confidential Tokens
+
+> Note: the recipient must first initialize a confidential transfer account
+> Note: After transferring the recipient must apply the pending balance
 
 To transfer confidential tokens you will need to generate three temporary keypairs used to store proof state. Label the keypair as follows
 
@@ -190,6 +193,7 @@ After generating the keypairs send a `POST`  request to `http://example.com/conf
 * `equality_proof_keypair` The base58 encoded private key of the equality proof keypair
 * `range_proof_keypair` The base58 encoded private key of the range proof keypair
 * `ciphertext_proof_keypair` The base58 encoded private key of the ciphertext proof keypair
+* `amount` The amount of tokens to transfer in lamports
 
 
 ```json
@@ -222,4 +226,85 @@ You must ensure that each transaction has confirmed before sending the next tran
     "AQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAEF+rdhoUWelWT7ijUTm1jMPw91zk0rKZJXk7AJ4U4ASVaeknzeyaMyYWRYf8OuMnVfR0i1Kjsvu0AOKxrMUPxyNLhJSL+jO+jR7E2ykcLmbIz9rnaLG3zrQt6MxdqjYSkB5CXHA9IaSwoghZdFKiOr5zTrfSU1c0MAKuoLQVVGBxgIY3Ws4q7qKBprN01oG6dqU8z2OMB0VZNsBdBlQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwQDAwAAAQAEAwEAAAEABAMCAAABAA=="
   ]
 }    
+```
+
+## Withdrawing Confidential Tokens
+
+
+To withdraw confidential tokens you will need to generate two temporary keypairs used to store proof state. Label the keypair as follows
+
+* `equality_proof_keypair`
+* `range_proof_keypair`
+
+
+After generating the keypairs send a `POST`  request to `http://example.com/confidential-balances/withdraw` with the following payload
+
+* `authority` is the public key of the wallet
+* `token_mint` is the mint address of the confidential wrapped mint
+* `elgamal_signature` is a message signed by the `authority` following the ElGamal signature from the confidential blink spec
+* `ae_signature` is a message signed by the `authority` following the AE signature from the confidential blink spec
+* `receiving_token_account` the ATA of the wrapped mint for the public key you want to transfer funds too
+* `equality_proof_keypair` The base58 encoded private key of the equality proof keypair
+* `range_proof_keypair` The base58 encoded private key of the range proof keypair
+* `amount` The amount of tokens to withdraw from the confidential balance
+
+
+```json
+{
+  "authority": "Hsh7Fp27e3JbQQog9i1nzF6qY8fdWHTbF7RW1xzuLx5T",
+  "token_mint": "EFnCaHgGto1NNk6Ym7TCoxdwKF24u2CYMSzaHHJ6pbFu",
+  "elgamal_signature": "3Cn8oMYkFjdZVDVvtFRbn9K8hMRZ4EWoFQ4m8LTpb9VL85hHXGwqpnDTtDPmBnsugppzNF7QfWvnG8NabGWN4d2V",
+  "ae_signature": "47exZmEWHavGx7PXALPqjGn2qdh3dKfeqyt8Vj6amJJntdGTxuPURTKB9q4tRBgqiyosv4orjh6f6b1Cg3K8xwPk",
+  "amount": 1,
+  "equality_proof_keypair": "4ZS9bedJkNCAgcV7fz19W8qirhMo4gBc1gQpxHLsJvadxeSFhPV12CU6YTGhL6MMWX2mzxcJpFNsySQb6t7sx3qy",
+  "range_proof_keypair": "EAc1zWBSFuSdtXUhMTRXiK7NdRgXBcCs1TVtyg13iDkYw9K6qnov3GBE5X11Xz3rmG8zrC6hX6MX1cmcuiYYCDi"
+}    
+```
+
+The response will be an aray of bincode serialized, base64 encoded transactions that need to be parsed, and signed by the `authority` specified in the request. The very first transaction in the array also needs to be signed by the `equality_proof_keypair`, `range_proof_keypair`
+
+You must ensure that each transaction has confirmed before sending the next transaction. The very final transaction closes the equality proof, and range proof accounts refunding the rent to the `authority` specified in the request payload.
+
+```json
+{
+  "transactions": [
+    "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"
+  ]
+}    
+```
+
+
+## Unwrapping Tokens
+
+> Note: Before you unwrap tokens, you must first withdraw them from your confidential balance into your non confidential balance
+
+Send a `POST` request to `http://example.com/private-wrapper/unwrap` with the following payload. 
+
+* `authority` is the public key of the wallet 
+* `unwrapped_token_mint` is the token mint address of the unwrapped token (ie: USDT)
+* `wrapped_token_mint` is the token mint of the wrapped mint as created via the spl token wrap program
+* `unwrapped_token_program` is the program id of the token program which created `unwrapped_token_mint`
+* `amount` is the amount of unwrapped tokens to wrap in lamports
+
+```json
+{
+  "authority": "Hsh7Fp27e3JbQQog9i1nzF6qY8fdWHTbF7RW1xzuLx5T",
+  "unwrapped_token_mint": "GqxbzHAZrSaTGEqXcTCUiMR7bLUPrSCb4nZdqcKEkahv",
+  "wrapped_token_mint": "3pQjCDCmaYGriwzz2M48WKkpXhMRRu3Q2Ghss8CqxRVx",
+  "unwrapped_token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+  "amount": 1
+}    
+```
+
+The response will be an aray of bincode serialized, base64 encoded transactions that need to be parsed, and signed by the `authority` specified in the request.
+
+```json
+{
+  "transactions": [
+    "AQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAUK+rdhoUWelWT7ijUTm1jMPw91zk0rKZJXk7AJ4U4ASVYp3IAoVvKs3kWHTVX2guZdh94TKi96xh2jbFTp4AwQJ32hcjOVj0fIE2NxZjn5g8Ej9sw5xKvzCO9FbwV5D14UhR58BbJsU4pua/UvEGLpf6XagAmTO/OUanxFEKOh3tHFy5FYJHc8ramA2J5VQrFRGYTsZs4JGPKVScRY3i5S6wXdgsd3+OvUnXsxAnsxgWy0bep7s7JFXPAhWGSSQblsBt324ddloZPZy+FGzut5rBy0he1fWzeROoz1hX7/AKkG3fbh7nWP3hhCXbzkbM3athr8TYO5DSf+vfko2KGL/JzWcOgns5hu0S1oSXZXhQJsSb+HXpqciMwOT2Fcno/I62oNsrC8NQAUhrgMjc9nGOkIHDqNDec4jdOzqZQncXEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEFCQIBCAYHBAkDAAkBAQAAAAAAAAA="
+  ]
+} 
 ```
