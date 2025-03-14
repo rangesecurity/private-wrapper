@@ -16,3 +16,14 @@ spl-token-confidential-transfer-proof-extraction = { git = "https://github.com/s
 spl-token-confidential-transfer-proof-generation = { git = "https://github.com/solana-program/token-2022", rev = "00e0f4723c2606c0facbb4921e1b2e2e030d1fa6" }
 bytemuck = "1"
 spl-token-wrap = {git = "https://github.com/rangesecurity/token-wrap", rev = "b98d552deebfeb0af64bf778ed6137e0c6f280a9"}
+
+# uncomment after testing
+[profile.release]
+opt-level = 3
+incremental = false
+lto = "fat"
+codegen-units = 1
+[profile.release.build-override]
+opt-level = 3
+incremental = false
+codegen-units = 1

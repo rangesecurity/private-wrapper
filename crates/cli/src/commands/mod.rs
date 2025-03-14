@@ -23,6 +23,7 @@ pub struct Cli {
 
 #[derive(Subcommand)]
 pub enum Commands {
+    #[command(about = "start the api")]
     StartAPI {
         #[arg(
             long,
@@ -37,6 +38,9 @@ pub enum Commands {
         )]
         rpc_url: String,
     },
+    #[command(
+        about = "initialize a wrapped mint with the spl token wrap program that supports confidential transfers"
+    )]
     CreateConfidentialWrappedMint {
         #[arg(
             long,
@@ -59,6 +63,9 @@ pub enum Commands {
         )]
         unwrapped_mint_program: String,
     },
+    #[command(
+        about = "wrap tokens with the spl token wrap program, the wrapped tokens will support confidential transfers"
+    )]
     WrapTokens {
         #[arg(
             long,
@@ -89,6 +96,7 @@ pub enum Commands {
         #[arg(long, help = "amount of tokens to wrap in lamports")]
         amount: u64,
     },
+    #[command(about = "initialize a confidential transfer account")]
     Initialize {
         #[arg(
             long,
@@ -111,6 +119,7 @@ pub enum Commands {
         )]
         unwrapped_mint: String,
     },
+    #[command(about = "deposit tokens from the non confidential balance into pending balance")]
     Deposit {
         #[arg(
             long,
@@ -135,6 +144,7 @@ pub enum Commands {
         #[arg(long, help = "amount of tokens to deposit in lamports")]
         amount: u64,
     },
+    #[command(about = "apply tokens from the pending balance into confidential available balance")]
     Apply {
         #[arg(
             long,
@@ -157,6 +167,7 @@ pub enum Commands {
         )]
         unwrapped_mint: String,
     },
+    #[command(about = "display confidential and non confidential balances")]
     Balances {
         #[arg(
             long,
@@ -173,6 +184,7 @@ pub enum Commands {
         )]
         unwrapped_mint: String,
     },
+    #[command(about = "confidentially transfers tokens")]
     Transfer {
         #[arg(
             long,
@@ -203,6 +215,7 @@ pub enum Commands {
         #[arg(long, help = "amount of tokens to transfer in lamports")]
         amount: u64,
     },
+    #[command(about = "withdraw tokens from the confidential balance to non confidential balance")]
     Withdraw {
         #[arg(
             long,
@@ -227,6 +240,7 @@ pub enum Commands {
         #[arg(long, help = "amount of tokens to withdraw in lamports")]
         amount: u64,
     },
+    #[command(about = "unwrap tokens with the spl token wrap program")]
     UnwrapTokens {
         #[arg(
             long,

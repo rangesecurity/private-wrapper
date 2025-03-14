@@ -16,6 +16,38 @@ $> make test-validator
 $> cargo test
 ```
 
+## CLI
+
+The `private-wrapper-cli` can be used to start the API, and interact with the API from the command line.
+
+To compile in debug mode
+
+```shell
+$> make bin
+```
+
+To compile in release mode
+
+```shell
+$> make bin-release
+```
+
+To explore the CLI now run
+
+```shell
+$> ./private-wrapper-cli --help
+```
+
+### Starting The API
+
+> Note: The API can be used for confidential transfers in general without needing to use the spl token wrap program
+
+To start the API run
+
+```shell
+$> ./private-wrapper-cli start-api
+```
+
 ## Initialize Confidential Transfer Account
 
 This will need to be done only once, and involves creating the confidential token account for the wrapped token mint.

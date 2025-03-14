@@ -4,8 +4,8 @@ test-validator:
 
 .PHONY: bin
 bin:
-	cargo build --bin private-wrapper-cli
+	(cargo build --bin private-wrapper-cli ; cp target/debug/private-wrapper-cli .)
 
 .PHONY: bin-release
 bin-release:
-	cargo build --release --bin private-wrapper-cli
+	(cargo build --release --bin private-wrapper-cli ; cp target/release/private-wrapper-cli .)
