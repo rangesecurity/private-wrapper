@@ -51,9 +51,9 @@ The response will be an aray of bincode serialized, base64 encoded transactions 
 
 > Note: You must first initialize the confidential transfer account
 
-Send a `POST` request to `http://example.com/private-wrapper/wrap` with the following payload. 
+Send a `POST` request to `http://example.com/private-wrapper/wrap` with the following payload.
 
-* `authority` is the public key of the wallet 
+* `authority` is the public key of the wallet
 * `unwrapped_token_mint` is the token mint address of the unwrapped token (ie: USDT)
 * `wrapped_token_mint` is the token mint of the wrapped mint as created via the spl token wrap program
 * `unwrapped_token_program` is the program id of the token program which created `unwrapped_token_mint`
@@ -79,11 +79,9 @@ The response will be an aray of bincode serialized, base64 encoded transactions 
 } 
 ```
 
-
 ## Deposit Wrapped Tokens
 
 To deposit your non confidential wrapped balance into the pending confidential balance send a `POST` request to `http://example.com/confidential-balances/deposit` with the following payload
-
 
 * `authority` is the public key of the wallet
 * `token_mint` is the mint address of the confidential wrapped mint
@@ -106,7 +104,6 @@ The response will be an aray of bincode serialized, base64 encoded transactions 
   ]
 }    
 ```
-
 
 ## Apply Pending Balance
 
@@ -136,12 +133,9 @@ The response will be an aray of bincode serialized, base64 encoded transactions 
 }    
 ```
 
-
 ## Get Balances
 
 To get confidential and non confidential balances for the confidential wrapped mint send a `POST` request to `http://example.com/confidential-balances/balances` with the following payload
-
-
 
 * `authority` is the public key of the wallet
 * `token_mint` is the mint address of the confidential wrapped mint
@@ -184,7 +178,6 @@ To transfer confidential tokens you will need to generate three temporary keypai
 
 After generating the keypairs send a `POST`  request to `http://example.com/confidential-balances/transfer` with the following payload
 
-
 * `authority` is the public key of the wallet
 * `token_mint` is the mint address of the confidential wrapped mint
 * `elgamal_signature` is a message signed by the `authority` following the ElGamal signature from the confidential blink spec
@@ -194,7 +187,6 @@ After generating the keypairs send a `POST`  request to `http://example.com/conf
 * `range_proof_keypair` The base58 encoded private key of the range proof keypair
 * `ciphertext_proof_keypair` The base58 encoded private key of the ciphertext proof keypair
 * `amount` The amount of tokens to transfer in lamports
-
 
 ```json
 {
@@ -214,8 +206,6 @@ The response will be an aray of bincode serialized, base64 encoded transactions 
 
 You must ensure that each transaction has confirmed before sending the next transaction. The very final transaction closes the equality proof, range proof, and ciphertext proof accounts refunding the rent to the `authority` specified in the request payload.
 
-
-
 ```json
 {
   "transactions": [
@@ -230,12 +220,10 @@ You must ensure that each transaction has confirmed before sending the next tran
 
 ## Withdrawing Confidential Tokens
 
-
 To withdraw confidential tokens you will need to generate two temporary keypairs used to store proof state. Label the keypair as follows
 
 * `equality_proof_keypair`
 * `range_proof_keypair`
-
 
 After generating the keypairs send a `POST`  request to `http://example.com/confidential-balances/withdraw` with the following payload
 
@@ -247,7 +235,6 @@ After generating the keypairs send a `POST`  request to `http://example.com/conf
 * `equality_proof_keypair` The base58 encoded private key of the equality proof keypair
 * `range_proof_keypair` The base58 encoded private key of the range proof keypair
 * `amount` The amount of tokens to withdraw from the confidential balance
-
 
 ```json
 {
@@ -276,14 +263,13 @@ You must ensure that each transaction has confirmed before sending the next tran
 }    
 ```
 
-
 ## Unwrapping Tokens
 
 > Note: Before you unwrap tokens, you must first withdraw them from your confidential balance into your non confidential balance
 
-Send a `POST` request to `http://example.com/private-wrapper/unwrap` with the following payload. 
+Send a `POST` request to `http://example.com/private-wrapper/unwrap` with the following payload.
 
-* `authority` is the public key of the wallet 
+* `authority` is the public key of the wallet
 * `unwrapped_token_mint` is the token mint address of the unwrapped token (ie: USDT)
 * `wrapped_token_mint` is the token mint of the wrapped mint as created via the spl token wrap program
 * `unwrapped_token_program` is the program id of the token program which created `unwrapped_token_mint`
