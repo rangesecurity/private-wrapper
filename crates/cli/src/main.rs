@@ -54,6 +54,16 @@ pub async fn main() -> anyhow::Result<()> {
                 unwrapped_mint
             ).await
         }
+        Commands::Transfer { api_url, rpc_url, keypair, unwrapped_mint, recipient, amount } => {
+            commands::transfer::transfer(
+                api_url,
+                rpc_url,
+                keypair,
+                recipient,
+                unwrapped_mint,
+                amount
+            ).await
+        }
     }
 }
 

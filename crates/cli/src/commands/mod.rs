@@ -5,6 +5,7 @@ pub mod initialize;
 pub mod deposit;
 pub mod apply;
 pub mod balances;
+pub mod transfer;
 
 use clap::{Parser, Subcommand};
 
@@ -89,5 +90,19 @@ pub enum Commands {
         keypair: String,
         #[arg(long, help = "unwrapped token mint", default_value = "GqxbzHAZrSaTGEqXcTCUiMR7bLUPrSCb4nZdqcKEkahv")]
         unwrapped_mint: String,
+    },
+    Transfer {
+        #[arg(long, help = "api endpoint for the private wrapper", default_value = "http://127.0.0.1:1337")]
+        api_url: String,
+        #[arg(long, help = "solana rpc url", default_value = "https://api.devnet.solana.com/")]
+        rpc_url: String,
+        #[arg(long, help = "path to a json keypair")]
+        keypair: String,
+        #[arg(long, help = "unwrapped token mint", default_value = "GqxbzHAZrSaTGEqXcTCUiMR7bLUPrSCb4nZdqcKEkahv")]
+        unwrapped_mint: String,
+        #[arg(long, help = "public key of user to transfer funds to", default_value = "BYuf1dG4YecRxCzkykK5tgBnNJo2SVdbedAzuFXgWy9y")]
+        recipient: String,
+        #[arg(long, help = "amount of tokens to transfer in lamports")]
+        amount: u64,
     },
 }
