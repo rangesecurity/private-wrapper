@@ -5,7 +5,7 @@ use {
     std::sync::Arc,
     tower_http::{
         cors::{Any, CorsLayer},
-        trace::{DefaultOnResponse, TraceLayer},
+        trace::{DefaultOnRequest, DefaultOnResponse, TraceLayer},
         LatencyUnit,
     },
     tracing::Level,
@@ -42,11 +42,13 @@ pub fn new(rpc: Arc<RpcClient>) -> Router {
         .route("/private-wrapper/unwrap", post(handlers::unwrap_tokens))
         .with_state(Arc::new(AppState { rpc }))
         .layer(
-            TraceLayer::new_for_http().on_response(
-                DefaultOnResponse::new()
-                    .level(Level::INFO)
-                    .latency_unit(LatencyUnit::Millis),
-            ),
+            TraceLayer::new_for_http()
+                .on_response(
+                    DefaultOnResponse::new()
+                        .level(Level::INFO)
+                        .latency_unit(LatencyUnit::Millis),
+                )
+                .on_request(DefaultOnRequest::new().level(Level::INFO)),
         )
         .layer(
             CorsLayer::default()
