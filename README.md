@@ -48,6 +48,24 @@ To start the API run
 $> ./private-wrapper-cli start-api
 ```
 
+## Message Signing And Key Derivation
+
+Due to the lack of availability for confidential transfer sdk's in browsers, the API uses signed messages to generate AE and ElGamal keypairs.
+
+* For ElGamal keypair generation the message to sign is `[bytes("ElGamalSecretKey"), bytes(user_ata)]`
+* For AE keypair generation the message to sign is `[bytes("AEKey"), bytes(user_ata)]`
+
+`user_ata` is the associated token account address for the confidential token mint.
+
+
+For ElGamal with a `user_ata` of `3qbR1eZRqXUWroWKKYhbDmR3FfqTHfqSU8zZSxtANzYh` the message to sign is
+
+`[69, 108, 71, 97, 109, 97, 108, 83, 101, 99, 114, 101, 116, 75, 101, 121, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42]`
+
+For AE with a `user_ata` of `3uWi9x2SRpmjztkpkr2WWeBoVq3exjXG2YfDWLvm8KsQ` the message to sign is
+
+`[65, 69, 75, 101, 121, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43]`
+
 ## Initialize Confidential Transfer Account
 
 This will need to be done only once, and involves creating the confidential token account for the wrapped token mint.
