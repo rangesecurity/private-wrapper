@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies.tokio]
 version = "1"
-features = ["full"]
+features = ["full", "parking_lot"]
 [dependencies.axum]
 version = "0.8"
 [dependencies.serde_json]
@@ -17,6 +17,7 @@ features = ["cors", "trace"]
 version = "1"
 [dependencies.tracing]
 version = "0.1"
+features = ["log", "attributes"]
 [dependencies.solana-client]
 version = "2.2.1"
 [dependencies.bincode]

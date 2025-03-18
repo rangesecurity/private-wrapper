@@ -1,0 +1,13 @@
+[Unit]
+Description=private wrapper service
+After=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/home/range/private-wrapper-cli start-api
+# Restart every >2 seconds to avoid StartLimitInterval failure
+RestartSec=30
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

@@ -7,7 +7,7 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, Layer};
 
 mod commands;
 
-#[tokio::main]
+#[tokio::main(flavor = "multi_thread")]
 pub async fn main() -> anyhow::Result<()> {
     let cli = commands::Cli::parse();
     init_log(&cli.log_level);
