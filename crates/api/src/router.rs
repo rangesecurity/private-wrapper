@@ -5,7 +5,7 @@ use {
     std::sync::Arc,
     tower_http::{
         cors::{Any, CorsLayer},
-        trace::{DefaultOnRequest, DefaultOnResponse, TraceLayer},
+        trace::{DefaultMakeSpan, DefaultOnResponse, TraceLayer},
         LatencyUnit,
     },
     tracing::Level,
@@ -43,12 +43,12 @@ pub fn new(rpc: Arc<RpcClient>) -> Router {
         .with_state(Arc::new(AppState { rpc }))
         .layer(
             TraceLayer::new_for_http()
+                .make_span_with(DefaultMakeSpan::new().level(Level::INFO))
                 .on_response(
                     DefaultOnResponse::new()
                         .level(Level::INFO)
                         .latency_unit(LatencyUnit::Millis),
-                )
-                .on_request(DefaultOnRequest::new().level(Level::INFO)),
+                ),
         )
         .layer(
             CorsLayer::default()
