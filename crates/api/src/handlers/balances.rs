@@ -219,16 +219,19 @@ pub async fn balances(
             .into_response();
     };
 
-    let Ok(decryptable_available_balance) = TryInto::<AeCiphertext>::try_into(
+    let decryptable_available_balance = match TryInto::<AeCiphertext>::try_into(
         confidential_transfer_account.decryptable_available_balance,
-    ) else {
-        return (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(ApiError {
-                msg: "failed to parse decryptable_available_balance".to_string(),
-            }),
-        )
-            .into_response();
+    ) {
+        Ok(decryptable_available_balance) => decryptable_available_balance,
+        Err(err) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ApiError {
+                    msg: format!("failed to parse decryptable_available_balance {err:#?}"),
+                }),
+            )
+                .into_response();
+        }   
     };
 
     let Some(decrypted_available_balance) = ae_key.decrypt(&decryptable_available_balance) else {
