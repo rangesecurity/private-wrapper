@@ -45,7 +45,11 @@ pub async fn transfer(
         &payload.token_mint,
         &spl_token_2022::id(),
     );
-
+    let receiving_token_account_key = spl_associated_token_account::get_associated_token_address_with_program_id(
+        &payload.receiving_token_account,
+        &payload.token_mint,
+        &spl_token_2022::id()
+    );
     // verify elgamal signature
     if !payload.elgamal_signature.verify(
         &payload.authority.to_bytes(),
@@ -102,7 +106,7 @@ pub async fn transfer(
         .get_multiple_accounts(&[
             payload.token_mint,
             user_ata,
-            payload.receiving_token_account,
+            receiving_token_account_key,
         ])
         .await
         .unwrap_or_default();
@@ -159,8 +163,7 @@ pub async fn transfer(
         return (
             StatusCode::BAD_REQUEST,
             Json(ApiError {
-                msg: "authority token account is not configured for confidential transfers"
-                    .to_string(),
+                msg: format!("sender_token_account({}) is not configured for confidential transfers", user_ata)
             }),
         )
             .into_response();
@@ -170,8 +173,7 @@ pub async fn transfer(
         return (
             StatusCode::BAD_REQUEST,
             Json(ApiError {
-                msg: "authority token account is not configured for confidential transfers"
-                    .to_string(),
+                msg: format!("receiving_token_account({}) is not configured for confidential transfers", receiving_token_account_key)
             }),
         )
             .into_response();
@@ -503,7 +505,7 @@ pub async fn transfer(
             &spl_token_2022::id(),
             &user_ata,
             &payload.token_mint,
-            &payload.receiving_token_account,
+            &receiving_token_account_key,
             &new_decryptable_available_balance.into(),
             &ciphertext_validity_proof_data_with_ciphertext.ciphertext_lo,
             &ciphertext_validity_proof_data_with_ciphertext.ciphertext_hi,
