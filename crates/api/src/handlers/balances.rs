@@ -233,17 +233,14 @@ pub async fn balances(
                 .into_response();
         }   
     };
-
-    let Some(decrypted_available_balance) = ae_key.decrypt(&decryptable_available_balance) else {
-        return (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(ApiError {
-                msg: "failed to decrypt decryptable_available_balance".to_string(),
-            }),
-        )
-            .into_response();
+    
+    let decrypted_available_balance = match ae_key.decrypt(&decryptable_available_balance) {
+        Some(decryptable_balance) => decryptable_balance,
+        None => {
+            log::warn!("failed to decrypt available balance");
+            0
+        }
     };
-
     (
         StatusCode::OK,
         Json(ApiBalancesResponse {
