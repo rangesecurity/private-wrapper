@@ -17,8 +17,8 @@ impl KeypairType {
     /// Returns the message to sign to generate the corresponding keypair
     pub fn message_to_sign(self, user_ata: Pubkey) -> Vec<u8> {
         match self {
-            Self::ElGamal => format!("ElGamalSecretKey{user_ata}").as_bytes().to_vec(),
-            Self::Ae => format!("AEKey{user_ata}").as_bytes().to_vec(),
+            Self::ElGamal => [b"ElGamalSecretKey", &b""[..]].concat(),
+            Self::Ae => [b"AEKey", &b""[..]].concat(),
         }
     }
 }
