@@ -52,19 +52,8 @@ $> ./private-wrapper-cli start-api
 
 Due to the lack of availability for confidential transfer sdk's in browsers, the API uses signed messages to generate AE and ElGamal keypairs.
 
-* For ElGamal keypair generation the message to sign is `[bytes("ElGamalSecretKey"), bytes(user_ata)]`
-* For AE keypair generation the message to sign is `[bytes("AEKey"), bytes(user_ata)]`
-
-`user_ata` is the associated token account address for the confidential token mint.
-
-
-For ElGamal with a `user_ata` of `3qbR1eZRqXUWroWKKYhbDmR3FfqTHfqSU8zZSxtANzYh` the message to sign is
-
-`[69, 108, 71, 97, 109, 97, 108, 83, 101, 99, 114, 101, 116, 75, 101, 121, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42]`
-
-For AE with a `user_ata` of `3uWi9x2SRpmjztkpkr2WWeBoVq3exjXG2YfDWLvm8KsQ` the message to sign is
-
-`[65, 69, 75, 101, 121, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43]`
+* For ElGamal keypair generation the message to sign is `[bytes("ElGamalSecretKey"), bytes("")]`
+* For AE keypair generation the message to sign is `[bytes("AEKey"), bytes("")]`
 
 ## Initialize Confidential Transfer Account
 
@@ -232,7 +221,7 @@ After generating the keypairs send a `POST`  request to `http://example.com/conf
 * `token_mint` is the mint address of the confidential wrapped mint
 * `elgamal_signature` is a message signed by the `authority` following the ElGamal signature from the confidential blink spec
 * `ae_signature` is a message signed by the `authority` following the AE signature from the confidential blink spec
-* `receiving_token_account` the ATA of the wrapped mint for the public key you want to transfer funds too
+* `receiving_token_account` wallet address of the recipient to receive the confidential tokens
 * `equality_proof_keypair` The base58 encoded private key of the equality proof keypair
 * `range_proof_keypair` The base58 encoded private key of the range proof keypair
 * `ciphertext_proof_keypair` The base58 encoded private key of the ciphertext proof keypair
